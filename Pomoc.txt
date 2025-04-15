@@ -4,3 +4,22 @@ CREATE DATABASE IF NOT EXISTS fittrack;
 -- Utwórz użytkownika i przyznaj mu uprawnienia
 CREATE USER 'fituser'@'localhost' IDENTIFIED BY 'fitpassword';
 GRANT ALL PRIVILEGES ON fittrack.* TO 'fituser'@'localhost';
+
+
+cd backend
+npm install
+npm run dev 
+
+cd frontend
+npm install
+npm start
+
+
+
+Zalecany workflow
+
+docker-compose up -d
+
+
+docker-compose stop frontend  # zatrzymanie tylko frontendu
+docker-compose down           # zatrzymanie wszystkiego
