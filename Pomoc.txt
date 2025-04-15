@@ -1,0 +1,6 @@
+-- Stwórz bazę danych
+CREATE DATABASE IF NOT EXISTS fittrack;
+
+-- Utwórz użytkownika i przyznaj mu uprawnienia
+CREATE USER 'fituser'@'localhost' IDENTIFIED BY 'fitpassword';
+GRANT ALL PRIVILEGES ON fittrack.* TO 'fituser'@'localhost';
