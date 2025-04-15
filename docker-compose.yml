@@ -9,6 +9,7 @@ services:
       - mongodb_data:/data/db
     environment:
       - MONGO_INITDB_DATABASE=fittrack
+      - CHOKIDAR_USEPOLLING=true
 
   mysql:
     image: mysql:8.0
@@ -44,6 +45,10 @@ services:
       - "3000:3000"
     depends_on:
       - backend
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WDS_SOCKET_PORT=3000
+      - FAST_REFRESH=false
     volumes:
       - ./frontend:/app
       - /app/node_modules
