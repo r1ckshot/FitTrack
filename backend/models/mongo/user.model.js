@@ -28,12 +28,8 @@ const User = mongoose.model(
       gender: String,
       weight: Number,
       height: Number
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now
     }
-  })
+  }, { timestamps: true }) // Automatyczne pola createdAt i updatedAt
 );
 
 module.exports = User;

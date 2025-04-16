@@ -6,11 +6,14 @@ const morgan = require('morgan');
 require('dotenv').config();
 
 const connectMongoDB = require('./config/db.config');
-const { connectMySQL } = require('./config/mysql.config');
+const { sequelize } = require('./config/mysql.config');
 
 // Połączenie z bazami danych
 connectMongoDB();
-connectMySQL();
+
+sequelize.sync({ alter: true }) // Włączy się z MySQL i synchronizuj modele
+  .then(() => console.log('Modele Sequelize zsynchronizowane z bazą MySQL.'))
+  .catch(error => console.error('Błąd synchronizacji MySQL:', error));
 
 const app = express();
 
@@ -21,12 +24,16 @@ app.use(morgan('combined'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+
 // Prosta trasa testowa
 app.get('/', (req, res) => {
   res.json({ message: "Witaj w API FitTrack!" });
 });
 
-// Konfiguracja routingu (będziemy dodawać później)
+const userRoutes = require('./routes/user.routes');
+app.use('/api', userRoutes);
+
+// Import i konfiguracja tras (dodamy je później)
 // require('./routes/auth.routes')(app);
 // require('./routes/user.routes')(app);
 
