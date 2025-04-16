@@ -23,3 +23,6 @@ docker-compose up -d
 
 docker-compose stop frontend  # zatrzymanie tylko frontendu
 docker-compose down           # zatrzymanie wszystkiego
+docker-compose restart backend
+
+docker-compose logs -f backend
