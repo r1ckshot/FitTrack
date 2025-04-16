@@ -1,11 +1,3 @@
--- Stwórz bazę danych
-CREATE DATABASE IF NOT EXISTS fittrack;
-
--- Utwórz użytkownika i przyznaj mu uprawnienia
-CREATE USER 'fituser'@'localhost' IDENTIFIED BY 'fitpassword';
-GRANT ALL PRIVILEGES ON fittrack.* TO 'fituser'@'localhost';
-
-
 cd backend
 npm install
 npm run dev 
@@ -15,14 +7,36 @@ npm install
 npm start
 
 
-
-Zalecany workflow
-
-docker-compose up -d
+DOCKER:
 
 
-docker-compose stop frontend  # zatrzymanie tylko frontendu
+docker-compose up -d          # uruchamianie wszystkiego		
 docker-compose down           # zatrzymanie wszystkiego
-docker-compose restart backend
 
-docker-compose logs -f backend
+
+docker-compose stop frontend  		# zatrzymanie tylko frontendu
+
+
+docker-compose restart backend 		# restart tylko backendu
+docker-compose logs -f backend 		# Sprawdzenie logów backendu
+
+
+docker-compose build 	# tylko jeżeli zmienił się Dockerfile lub docker-compose.yml
+
+
+MongoDB:
+
+Zatrzymać bazę mongod, najpierw wystartować Docker a po nim MongoDB Compass.
+
+
+MySQL Workbench:
+
+1) Wewnątrz Dockera:
+docker exec -it fittrack-mysql-1 mysql -u root -p
+
+ALTER USER 'fituser'@'%' IDENTIFIED WITH mysql_native_password BY 'fitpassword';
+ALTER USER 'fituser'@'%' IDENTIFIED WITH mysql_native_password BY 'fitpassword';
+
+EXIT;
+
+Wystartować w MySQL Workbench. 
