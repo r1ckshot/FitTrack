@@ -6,7 +6,7 @@ const sequelize = new Sequelize(
   process.env.MYSQL_USER || 'fituser',
   process.env.MYSQL_PASSWORD || 'fitpassword',
   {
-    host: process.env.MYSQL_HOST || 'localhost',
+    host: process.env.MYSQL_HOST || 'mysql',
     dialect: 'mysql',
     logging: console.log,
     pool: {
