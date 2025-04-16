@@ -1,11 +1,12 @@
 const express = require('express');
 const MongoUser = require('../models/mongo/user.model'); // Model MongoDB
 const MySQLUser = require('../models/mysql/user.model'); // Model MySQL
+const { authenticateToken, authorizeRole } = require('../middlewares/auth.middleware');
 
 const router = express.Router();
 
 // MongoDB: Pobierz wszystkich użytkowników
-router.get('/mongo/users', async (req, res) => {
+router.get('/mongo/users', authenticateToken, async (req, res) => {
   try {
     const users = await MongoUser.find();
     res.status(200).json(users);
@@ -15,7 +16,7 @@ router.get('/mongo/users', async (req, res) => {
 });
 
 // MySQL: Pobierz wszystkich użytkowników
-router.get('/mysql/users', async (req, res) => {
+router.get('/mysql/users', authenticateToken, async (req, res) => {
   try {
     const users = await MySQLUser.findAll();
     res.status(200).json(users);
@@ -25,7 +26,7 @@ router.get('/mysql/users', async (req, res) => {
 });
 
 // MongoDB: Pobierz użytkownika po ID
-router.get('/mongo/users/:id', async (req, res) => {
+router.get('/mongo/users/:id', authenticateToken, async (req, res) => {
   try {
     const user = await MongoUser.findById(req.params.id);
     if (!user) {
@@ -38,7 +39,7 @@ router.get('/mongo/users/:id', async (req, res) => {
 });
 
 // MySQL: Pobierz użytkownika po ID
-router.get('/mysql/users/:id', async (req, res) => {
+router.get('/mysql/users/:id', authenticateToken, async (req, res) => {
   try {
     const user = await MySQLUser.findByPk(req.params.id);
     if (!user) {
@@ -51,7 +52,7 @@ router.get('/mysql/users/:id', async (req, res) => {
 });
 
 // MongoDB: Dodaj nowego użytkownika
-router.post('/mongo/users', async (req, res) => {
+router.post('/mongo/users', authenticateToken, async (req, res) => {
   try {
     const newUser = new MongoUser(req.body);
     const savedUser = await newUser.save();
@@ -62,7 +63,7 @@ router.post('/mongo/users', async (req, res) => {
 });
 
 // MySQL: Dodaj nowego użytkownika
-router.post('/mysql/users', async (req, res) => {
+router.post('/mysql/users', authenticateToken, async (req, res) => {
   try {
     const newUser = await MySQLUser.create(req.body);
     res.status(201).json(newUser);
@@ -71,8 +72,10 @@ router.post('/mysql/users', async (req, res) => {
   }
 });
 
+// Tylko administrator może usunąć użytkownika
+
 // MongoDB: Usuń użytkownika po ID
-router.delete('/mongo/users/:id', async (req, res) => {
+router.delete('/mongo/users/:id', authenticateToken, authorizeRole(['admin']), async (req, res) => {
   try {
     const deletedUser = await MongoUser.findByIdAndDelete(req.params.id);
     if (!deletedUser) {
@@ -84,8 +87,7 @@ router.delete('/mongo/users/:id', async (req, res) => {
   }
 });
 
-// MySQL: Usuń użytkownika po ID
-router.delete('/mysql/users/:id', async (req, res) => {
+router.delete('/mysql/users/:id', authenticateToken, authorizeRole(['admin']), async (req, res) => {
   try {
     const deletedUser = await MySQLUser.destroy({ where: { id: req.params.id } });
     if (!deletedUser) {
@@ -94,6 +96,96 @@ router.delete('/mysql/users/:id', async (req, res) => {
     res.status(200).json({ message: 'Użytkownik usunięty z MySQL.' });
   } catch (error) {
     res.status(500).json({ error: 'Błąd usuwania użytkownika z MySQL.' });
+  }
+});
+
+// MongoDB: Edytuj dane użytkownika
+router.put('/mongo/users/:id', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    // Upewnij się, że użytkownik edytuje swoje dane lub ma rolę admina
+    if (req.user.id !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Brak uprawnień do edytowania tego użytkownika.' });
+    }
+
+    const updatedUser = await MongoUser.findByIdAndUpdate(userId, req.body, { new: true });
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'Użytkownik nie znaleziony w MongoDB.' });
+    }
+
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    console.error('Błąd edycji użytkownika w MongoDB:', error);
+    res.status(500).json({ error: 'Błąd edycji użytkownika.' });
+  }
+});
+
+// MySQL: Edytuj dane użytkownika
+router.put('/mysql/users/:id', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    // Upewnij się, że użytkownik edytuje swoje dane lub ma rolę admina
+    if (req.user.id !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Brak uprawnień do edytowania tego użytkownika.' });
+    }
+
+    const [updatedRowsCount] = await MySQLUser.update(req.body, { where: { id: userId } });
+    if (updatedRowsCount === 0) {
+      return res.status(404).json({ error: 'Użytkownik nie znaleziony w MySQL.' });
+    }
+
+    const updatedUser = await MySQLUser.findByPk(userId);
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    console.error('Błąd edycji użytkownika w MySQL:', error);
+    res.status(500).json({ error: 'Błąd edycji użytkownika.' });
+  }
+});
+
+// MongoDB: Edytuj dane użytkownika
+router.put('/mongo/users/:id', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    // Upewnij się, że użytkownik edytuje swoje dane lub ma rolę admina
+    if (req.user.id !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Brak uprawnień do edytowania tego użytkownika.' });
+    }
+
+    const updatedUser = await MongoUser.findByIdAndUpdate(userId, req.body, { new: true });
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'Użytkownik nie znaleziony w MongoDB.' });
+    }
+
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    console.error('Błąd edycji użytkownika w MongoDB:', error);
+    res.status(500).json({ error: 'Błąd edycji użytkownika.' });
+  }
+});
+
+// MySQL: Edytuj dane użytkownika
+router.put('/mysql/users/:id', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    // Upewnij się, że użytkownik edytuje swoje dane lub ma rolę admina
+    if (req.user.id !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Brak uprawnień do edytowania tego użytkownika.' });
+    }
+
+    const [updatedRowsCount] = await MySQLUser.update(req.body, { where: { id: userId } });
+    if (updatedRowsCount === 0) {
+      return res.status(404).json({ error: 'Użytkownik nie znaleziony w MySQL.' });
+    }
+
+    const updatedUser = await MySQLUser.findByPk(userId);
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    console.error('Błąd edycji użytkownika w MySQL:', error);
+    res.status(500).json({ error: 'Błąd edycji użytkownika.' });
   }
 });
 

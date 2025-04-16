@@ -33,6 +33,9 @@ app.get('/', (req, res) => {
 const userRoutes = require('./routes/user.routes');
 app.use('/api', userRoutes);
 
+const authRoutes = require('./routes/auth.routes');
+app.use('/api', authRoutes);
+
 // Import i konfiguracja tras (dodamy je później)
 // require('./routes/auth.routes')(app);
 // require('./routes/user.routes')(app);
