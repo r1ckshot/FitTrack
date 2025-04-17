@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Button, TextField, Typography, Snackbar, Alert } from '@mui/material';
 import { useFormik } from 'formik';
+import { useNavigate } from 'react-router-dom';
 import * as yup from 'yup';
 import api from '../services/api';
 import { motion } from 'framer-motion';
@@ -11,8 +12,9 @@ const validationSchema = yup.object({
   password: yup.string().min(6, 'Hasło musi mieć co najmniej 6 znaków').required('Hasło jest wymagane'),
 });
 
-const LoginPage = () => {
+const LoginPage = ({ updateRole }) => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const navigate = useNavigate();
 
   const formik = useFormik({
     initialValues: { email: '', password: '' },
@@ -20,7 +22,10 @@ const LoginPage = () => {
     onSubmit: async (values) => {
       try {
         const response = await api.post('/auth/login', values);
-        localStorage.setItem('token', response.data.token); // Zapis tokena do localStorage
+        localStorage.setItem('token', response.data.token); // Zapis tokena do LocalStorage
+        
+        updateRole(); // Aktualizujemy rolę po zapisaniu tokena
+        navigate('/dashboard'); // Przekierowanie do dashboardu
         setSnackbar({ open: true, message: 'Zalogowano pomyślnie!', severity: 'success' });
       } catch (error) {
         setSnackbar({ open: true, message: error.response?.data?.error || 'Błąd logowania', severity: 'error' });
