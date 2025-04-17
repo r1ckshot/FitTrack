@@ -1,8 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Button, TextField, Typography, Snackbar, Alert } from '@mui/material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import api from '../services/api';
+import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
+import RestaurantIcon from '@mui/icons-material/Restaurant';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import SportsGymnasticsIcon from '@mui/icons-material/SportsGymnastics';
+import EmojiFoodBeverageIcon from '@mui/icons-material/EmojiFoodBeverage';
+import SelfImprovementIcon from '@mui/icons-material/SelfImprovement';
+import { motion } from 'framer-motion';
 
 const validationSchema = yup.object({
   email: yup.string().email('Nieprawidłowy email').required('Email jest wymagany'),
@@ -11,6 +20,30 @@ const validationSchema = yup.object({
 
 const LoginPage = () => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [backgroundIcons, setBackgroundIcons] = useState([]);
+
+  // Generowanie ikonek tylko raz przy załadowaniu komponentu
+  useEffect(() => {
+    const icons = [
+      <FitnessCenterIcon fontSize="inherit" />,
+      <RestaurantIcon fontSize="inherit" />,
+      <CalendarTodayIcon fontSize="inherit" />,
+      <TrendingUpIcon fontSize="inherit" />,
+      <FavoriteIcon fontSize="inherit" />,
+      <SportsGymnasticsIcon fontSize="inherit" />,
+      <EmojiFoodBeverageIcon fontSize="inherit" />,
+      <SelfImprovementIcon fontSize="inherit" />,
+    ];
+    const generatedIcons = Array.from({ length: 25 }).map(() => ({
+      icon: icons[Math.floor(Math.random() * icons.length)],
+      top: `${Math.random() * 100}%`,
+      left: `${Math.random() * 100}%`,
+      size: `${Math.random() * 50 + 30}px`,
+      opacity: Math.random() * 0.3 + 0.1,
+      rotation: Math.random() * 360,
+    }));
+    setBackgroundIcons(generatedIcons);
+  }, []);
 
   const formik = useFormik({
     initialValues: { email: '', password: '' },
@@ -33,9 +66,34 @@ const LoginPage = () => {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
+        position: 'relative',
+        overflow: 'hidden',
         background: 'linear-gradient(135deg, #4CAF50, #81C784)',
       }}
     >
+      {/* Tło z ikonkami */}
+      {backgroundIcons.map((item, index) => (
+        <Box
+          key={index}
+          sx={{
+            position: 'absolute',
+            top: item.top,
+            left: item.left,
+            fontSize: item.size,
+            color: `rgba(255, 255, 255, ${item.opacity})`,
+            transform: `rotate(${item.rotation * 360}deg)`,
+            animation: `float ${10 + (index % 5)}s infinite ease-in-out`,
+            '@keyframes float': {
+              '0%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(20px)' },
+              '100%': { transform: 'translateY(0px)' },
+            },
+          }}
+        >
+          {item.icon}
+        </Box>
+      ))}
+
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}
@@ -46,8 +104,11 @@ const LoginPage = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-      <Box
-        sx={{
+      <motion.div
+        initial={{ y: -200, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.8 }}
+        style={{
           width: '400px',
           padding: '20px',
           borderRadius: '8px',
@@ -93,7 +154,7 @@ const LoginPage = () => {
             Zaloguj się
           </Button>
         </form>
-      </Box>
+      </motion.div>
     </Box>
   );
 };
