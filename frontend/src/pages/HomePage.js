@@ -5,26 +5,11 @@ import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import SportsGymnasticsIcon from '@mui/icons-material/SportsGymnastics';
-import EmojiFoodBeverageIcon from '@mui/icons-material/EmojiFoodBeverage';
-import SelfImprovementIcon from '@mui/icons-material/SelfImprovement';
 import { motion } from 'framer-motion';
+import BackgroundIcons from '../components/BackgroundIcons'; // Import wspólnego komponentu
 
 const HomePage = () => {
   const navigate = useNavigate();
-
-  // Lista ikon do randomizacji
-  const icons = [
-    <FitnessCenterIcon fontSize="inherit" />,
-    <RestaurantIcon fontSize="inherit" />,
-    <CalendarTodayIcon fontSize="inherit" />,
-    <TrendingUpIcon fontSize="inherit" />,
-    <FavoriteIcon fontSize="inherit" />,
-    <SportsGymnasticsIcon fontSize="inherit" />,
-    <EmojiFoodBeverageIcon fontSize="inherit" />,
-    <SelfImprovementIcon fontSize="inherit" />,
-  ];
 
   return (
     <Box
@@ -36,29 +21,8 @@ const HomePage = () => {
         background: 'linear-gradient(135deg, #4CAF50, #81C784)',
       }}
     >
-      {/* Losowe ikonki w tle */}
-      {Array.from({ length: 25 }).map((_, index) => (
-        <Box
-          key={index}
-          sx={{
-            position: 'absolute',
-            top: `${Math.random() * 100}%`,
-            left: `${Math.random() * 100}%`,
-            fontSize: `${Math.random() * 50 + 30}px`,
-            color: `rgba(255, 255, 255, ${Math.random() * 0.3 + 0.1})`, // Lekko transparentne
-            transform: `rotate(${Math.random() * 360}deg)`,
-            animation: `float ${Math.random() * 10 + 5}s infinite ease-in-out`,
-            zIndex: 0, // Ikonki w tle mają niski z-index
-            '@keyframes float': {
-              '0%': { transform: 'translateY(0px)' },
-              '50%': { transform: 'translateY(20px)' },
-              '100%': { transform: 'translateY(0px)' },
-            },
-          }}
-        >
-          {icons[Math.floor(Math.random() * icons.length)]}
-        </Box>
-      ))}
+      {/* Tło z ikonkami */}
+      <BackgroundIcons />
 
       {/* Lewa strona z nazwą projektu */}
       <motion.div
