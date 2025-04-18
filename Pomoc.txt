@@ -34,7 +34,8 @@ MySQL Workbench:
 1) Wewnątrz Dockera:
 docker exec -it fittrack-mysql-1 mysql -u root -p
 
-ALTER USER 'fituser'@'%' IDENTIFIED WITH mysql_native_password BY 'fitpassword';
+password
+
 ALTER USER 'fituser'@'%' IDENTIFIED WITH mysql_native_password BY 'fitpassword';
 
 EXIT;

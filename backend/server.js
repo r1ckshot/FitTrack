@@ -8,13 +8,6 @@ require('dotenv').config();
 const connectMongoDB = require('./config/db.config');
 const { sequelize } = require('./config/mysql.config');
 
-// Połączenie z bazami danych
-connectMongoDB();
-
-sequelize.sync({ alter: true }) // Włączy się z MySQL i synchronizuj modele
-  .then(() => console.log('Modele Sequelize zsynchronizowane z bazą MySQL.'))
-  .catch(error => console.error('Błąd synchronizacji MySQL:', error));
-
 const app = express();
 
 // Middleware
@@ -24,21 +17,31 @@ app.use(morgan('combined'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// Sprawdzamy typ bazy danych z .env
+const databaseType = process.env.DATABASE_TYPE || 'both';
+
+// Połączenie z bazami danych na podstawie DATABASE_TYPE
+if (databaseType === 'mongo' || databaseType === 'both') {
+  connectMongoDB();
+}
+
+if (databaseType === 'mysql' || databaseType === 'both') {
+  sequelize.sync({ alter: true }) // Synchronizacja z MySQL
+    .then(() => console.log('Modele Sequelize zsynchronizowane z bazą MySQL.'))
+    .catch(error => console.error('Błąd synchronizacji MySQL:', error));
+}
 
 // Prosta trasa testowa
 app.get('/', (req, res) => {
-  res.json({ message: "Witaj w API FitTrack!" });
+  res.json({ message: `API FitTrack działa na bazie: ${databaseType}` });
 });
 
+// Import tras
 const userRoutes = require('./routes/user.routes');
 app.use('/api', userRoutes);
 
 const authRoutes = require('./routes/auth.routes');
 app.use('/api', authRoutes);
-
-// Import i konfiguracja tras (dodamy je później)
-// require('./routes/auth.routes')(app);
-// require('./routes/user.routes')(app);
 
 // Ustawienie portu i uruchomienie serwera
 const PORT = process.env.PORT || 8080;
