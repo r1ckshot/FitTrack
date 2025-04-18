@@ -7,6 +7,18 @@ const api = axios.create({
   },
 });
 
+// Dodaj token JWT do każdego żądania
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token'); // Pobierz token z LocalStorage
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`; // Dodaj nagłówek Authorization
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 // Przechwytuj błędy i loguj je (opcjonalnie)
 api.interceptors.response.use(
   (response) => response,

@@ -6,21 +6,29 @@ import TrainerDashboard from './pages/TrainerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import { getUserRole } from './utils/auth'; // Import funkcji
+import { getUserRole } from './utils/auth';
+import ProgressPage from './pages/ProgressPage';
 
 const App = () => {
-  const [role, setRole] = useState(null);
+  const [role, setRole] = useState(null); // Rola użytkownika
+  const [isLoading, setIsLoading] = useState(true); // Stan ładowania aplikacji
 
   // Funkcja aktualizująca rolę na podstawie tokena
   const updateRole = () => {
-    const userRole = getUserRole();
-    setRole(userRole);
+    const userRole = getUserRole(); // Pobierz rolę z tokena
+    setRole(userRole); // Ustaw rolę
+    setIsLoading(false); // Zakończ ładowanie
   };
 
   // Aktualizujemy rolę przy załadowaniu aplikacji
   useEffect(() => {
-    updateRole();
+    updateRole(); // Wywołaj funkcję aktualizacji roli
   }, []);
+
+  // Wyświetl wskaźnik ładowania, jeśli aplikacja jeszcze się inicjalizuje
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <Router>
@@ -43,13 +51,14 @@ const App = () => {
             ) : role === 'admin' ? (
               <AdminDashboard />
             ) : (
-              <Navigate to="/" />
+              <Navigate to="/" replace />
             )
           }
         />
 
         {/* Obsługa nieznanych tras */}
-        <Route path="*" element={<Navigate to="/" />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/progress" element={<ProgressPage />} />
       </Routes>
     </Router>
   );
