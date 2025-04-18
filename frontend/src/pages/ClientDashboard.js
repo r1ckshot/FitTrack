@@ -100,7 +100,7 @@ const ClientDashboard = () => {
                   boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.2)',
                   textAlign: 'center',
                 }}
-                onClick={() => navigate('/plans')}
+                onClick={() => navigate('/exercises')}
               >
                 <CardActionArea sx={{ padding: '20px' }}>
                   <FitnessCenterIcon sx={{ fontSize: '50px', color: '#4CAF50', mb: 2 }} />
