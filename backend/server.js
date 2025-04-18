@@ -43,6 +43,9 @@ app.use('/api', userRoutes);
 const authRoutes = require('./routes/auth.routes');
 app.use('/api', authRoutes);
 
+const progressRoutes = require('./routes/progress.routes');
+app.use('/api', progressRoutes);
+
 // Ustawienie portu i uruchomienie serwera
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
