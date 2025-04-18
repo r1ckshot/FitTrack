@@ -5,174 +5,160 @@ const { authenticateToken, authorizeRole } = require('../middlewares/auth.middle
 
 const router = express.Router();
 
-// MongoDB: Filtrowanie użytkowników według roli
-router.get('/mongo/users', authenticateToken, async (req, res) => {
+// Pobranie typu bazy danych z .env
+const databaseType = process.env.DATABASE_TYPE || 'both';
+
+// Filtrowanie użytkowników według roli
+router.get('/users', authenticateToken, async (req, res) => {
   try {
     const { role } = req.query; // Pobierz rolę z parametrów zapytania, np. ?role=trainer
-    let filter = {};
+    let users = [];
 
-    // Admin może przeglądać wszystkich lub filtrować według roli
-    if (req.user.role === 'admin') {
-      if (role) {
-        filter.role = role; // Filtruj według roli, jeśli podano
+    // MongoDB: Pobierz użytkowników
+    if (databaseType === 'mongo' || databaseType === 'both') {
+      let filter = {};
+      if (req.user.role === 'admin' && role) {
+        filter.role = role;
+      } else if (req.user.role === 'trainer') {
+        filter.role = 'client';
+      } else if (req.user.role === 'client') {
+        filter.role = 'trainer';
       }
-    } else if (req.user.role === 'trainer') {
-      filter.role = 'client'; // Trener może widzieć tylko klientów
-    } else if (req.user.role === 'client') {
-      filter.role = 'trainer'; // Klient może widzieć tylko trenerów
-    } else {
-      return res.status(403).json({ error: 'Brak uprawnień do przeglądania użytkowników.' });
+      const mongoUsers = await MongoUser.find(filter);
+      users = users.concat(mongoUsers);
     }
 
-    const users = await MongoUser.find(filter);
+    // MySQL: Pobierz użytkowników
+    if (databaseType === 'mysql' || databaseType === 'both') {
+      let whereClause = {};
+      if (req.user.role === 'admin' && role) {
+        whereClause.role = role;
+      } else if (req.user.role === 'trainer') {
+        whereClause.role = 'client';
+      } else if (req.user.role === 'client') {
+        whereClause.role = 'trainer';
+      }
+      const mysqlUsers = await MySQLUser.findAll({ where: whereClause });
+      users = users.concat(mysqlUsers);
+    }
+
     res.status(200).json(users);
   } catch (error) {
-    console.error('Błąd filtrowania użytkowników w MongoDB:', error);
+    console.error('Błąd filtrowania użytkowników:', error);
     res.status(500).json({ error: 'Błąd filtrowania użytkowników.' });
   }
 });
 
-// MySQL: Filtrowanie użytkowników według roli
-router.get('/mysql/users', authenticateToken, async (req, res) => {
+// Pobierz użytkownika po ID
+router.get('/users/:id', authenticateToken, async (req, res) => {
   try {
-    const { role } = req.query; // Pobierz rolę z parametrów zapytania, np. ?role=trainer
-    let whereClause = {};
+    const userId = req.params.id;
+    let user = null;
 
-    // Admin może przeglądać wszystkich lub filtrować według roli
-    if (req.user.role === 'admin') {
-      if (role) {
-        whereClause.role = role; // Filtruj według roli, jeśli podano
-      }
-    } else if (req.user.role === 'trainer') {
-      whereClause.role = 'client'; // Trener może widzieć tylko klientów
-    } else if (req.user.role === 'client') {
-      whereClause.role = 'trainer'; // Klient może widzieć tylko trenerów
+    // MongoDB: Pobierz użytkownika
+    if (databaseType === 'mongo' || databaseType === 'both') {
+      user = await MongoUser.findById(userId);
+    }
+
+    // MySQL: Pobierz użytkownika
+    if ((databaseType === 'mysql' || databaseType === 'both') && !user) {
+      user = await MySQLUser.findByPk(userId);
+    }
+
+    if (!user) {
+      return res.status(404).json({ error: 'Użytkownik nie znaleziony.' });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.error('Błąd pobierania użytkownika:', error);
+    res.status(500).json({ error: 'Błąd pobierania użytkownika.' });
+  }
+});
+
+// Dodaj nowego użytkownika
+router.post('/users', authenticateToken, authorizeRole(['admin']), async (req, res) => {
+  try {
+    let userCreated = false;
+
+    // MongoDB: Dodaj użytkownika
+    if (databaseType === 'mongo' || databaseType === 'both') {
+      const newUser = new MongoUser(req.body);
+      await newUser.save();
+      userCreated = true;
+    }
+
+    // MySQL: Dodaj użytkownika
+    if (databaseType === 'mysql' || databaseType === 'both') {
+      await MySQLUser.create(req.body);
+      userCreated = true;
+    }
+
+    if (userCreated) {
+      res.status(201).json({ message: 'Użytkownik dodany pomyślnie.' });
     } else {
-      return res.status(403).json({ error: 'Brak uprawnień do przeglądania użytkowników.' });
+      res.status(500).json({ error: 'Nie udało się dodać użytkownika.' });
     }
-
-    const users = await MySQLUser.findAll({ where: whereClause });
-    res.status(200).json(users);
   } catch (error) {
-    console.error('Błąd filtrowania użytkowników w MySQL:', error);
-    res.status(500).json({ error: 'Błąd filtrowania użytkowników.' });
+    console.error('Błąd dodawania użytkownika:', error);
+    res.status(500).json({ error: 'Błąd dodawania użytkownika.' });
   }
 });
 
-// MongoDB: Pobierz użytkownika po ID
-router.get('/mongo/users/:id', authenticateToken, async (req, res) => {
-  try {
-    const user = await MongoUser.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ error: 'Użytkownik nie znaleziony w MongoDB.' });
-    }
-    res.status(200).json(user);
-  } catch (error) {
-    res.status(500).json({ error: 'Błąd pobierania użytkownika z MongoDB.' });
-  }
-});
-
-// MySQL: Pobierz użytkownika po ID
-router.get('/mysql/users/:id', authenticateToken, async (req, res) => {
-  try {
-    const user = await MySQLUser.findByPk(req.params.id);
-    if (!user) {
-      return res.status(404).json({ error: 'Użytkownik nie znaleziony w MySQL.' });
-    }
-    res.status(200).json(user);
-  } catch (error) {
-    res.status(500).json({ error: 'Błąd pobierania użytkownika z MySQL.' });
-  }
-});
-
-// MongoDB: Dodaj nowego użytkownika
-router.post('/mongo/users', authenticateToken, authorizeRole(['admin']), async (req, res) => {
-  try {
-    const newUser = new MongoUser(req.body);
-    const savedUser = await newUser.save();
-    res.status(201).json(savedUser);
-  } catch (error) {
-    res.status(500).json({ error: 'Błąd dodawania użytkownika do MongoDB.' });
-  }
-});
-
-// MySQL: Dodaj nowego użytkownika
-router.post('/mysql/users', authenticateToken, authorizeRole(['admin']), async (req, res) => {
-  try {
-    const newUser = await MySQLUser.create(req.body);
-    res.status(201).json(newUser);
-  } catch (error) {
-    res.status(500).json({ error: 'Błąd dodawania użytkownika do MySQL.' });
-  }
-});
-
-// MongoDB: Usuń użytkownika po ID
-router.delete('/mongo/users/:id', authenticateToken, authorizeRole(['admin']), async (req, res) => {
-  try {
-    const deletedUser = await MongoUser.findByIdAndDelete(req.params.id);
-    if (!deletedUser) {
-      return res.status(404).json({ error: 'Użytkownik nie znaleziony w MongoDB.' });
-    }
-    res.status(200).json({ message: 'Użytkownik usunięty z MongoDB.' });
-  } catch (error) {
-    res.status(500).json({ error: 'Błąd usuwania użytkownika z MongoDB.' });
-  }
-});
-
-// MySQL: Usuń użytkownika po ID
-router.delete('/mysql/users/:id', authenticateToken, authorizeRole(['admin']), async (req, res) => {
-  try {
-    const deletedUser = await MySQLUser.destroy({ where: { id: req.params.id } });
-    if (!deletedUser) {
-      return res.status(404).json({ error: 'Użytkownik nie znaleziony w MySQL.' });
-    }
-    res.status(200).json({ message: 'Użytkownik usunięty z MySQL.' });
-  } catch (error) {
-    res.status(500).json({ error: 'Błąd usuwania użytkownika z MySQL.' });
-  }
-});
-
-// MongoDB: Edytuj dane użytkownika
-router.put('/mongo/users/:id', authenticateToken, async (req, res) => {
+// Usuń użytkownika po ID
+router.delete('/users/:id', authenticateToken, authorizeRole(['admin']), async (req, res) => {
   try {
     const userId = req.params.id;
+    let userDeleted = false;
 
-    // Upewnij się, że użytkownik edytuje swoje dane lub ma rolę admina
-    if (req.user.id !== userId && req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Brak uprawnień do edytowania tego użytkownika.' });
+    // MongoDB: Usuń użytkownika
+    if (databaseType === 'mongo' || databaseType === 'both') {
+      const deletedUser = await MongoUser.findByIdAndDelete(userId);
+      if (deletedUser) userDeleted = true;
     }
 
-    const updatedUser = await MongoUser.findByIdAndUpdate(userId, req.body, { new: true });
-    if (!updatedUser) {
-      return res.status(404).json({ error: 'Użytkownik nie znaleziony w MongoDB.' });
+    // MySQL: Usuń użytkownika
+    if (databaseType === 'mysql' || databaseType === 'both') {
+      const deletedUser = await MySQLUser.destroy({ where: { id: userId } });
+      if (deletedUser) userDeleted = true;
     }
 
-    res.status(200).json(updatedUser);
+    if (userDeleted) {
+      res.status(200).json({ message: 'Użytkownik usunięty pomyślnie.' });
+    } else {
+      res.status(404).json({ error: 'Użytkownik nie znaleziony.' });
+    }
   } catch (error) {
-    console.error('Błąd edycji użytkownika w MongoDB:', error);
-    res.status(500).json({ error: 'Błąd edycji użytkownika.' });
+    console.error('Błąd usuwania użytkownika:', error);
+    res.status(500).json({ error: 'Błąd usuwania użytkownika.' });
   }
 });
 
-// MySQL: Edytuj dane użytkownika
-router.put('/mysql/users/:id', authenticateToken, async (req, res) => {
+// Edytuj dane użytkownika
+router.put('/users/:id', authenticateToken, async (req, res) => {
   try {
     const userId = req.params.id;
+    let userUpdated = false;
 
-    // Upewnij się, że użytkownik edytuje swoje dane lub ma rolę admina
-    if (req.user.id !== userId && req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Brak uprawnień do edytowania tego użytkownika.' });
+    // MongoDB: Edytuj dane użytkownika
+    if (databaseType === 'mongo' || databaseType === 'both') {
+      const updatedUser = await MongoUser.findByIdAndUpdate(userId, req.body, { new: true });
+      if (updatedUser) userUpdated = true;
     }
 
-    const [updatedRowsCount] = await MySQLUser.update(req.body, { where: { id: userId } });
-    if (updatedRowsCount === 0) {
-      return res.status(404).json({ error: 'Użytkownik nie znaleziony w MySQL.' });
+    // MySQL: Edytuj dane użytkownika
+    if (databaseType === 'mysql' || databaseType === 'both') {
+      const [updatedRowsCount] = await MySQLUser.update(req.body, { where: { id: userId } });
+      if (updatedRowsCount > 0) userUpdated = true;
     }
 
-    const updatedUser = await MySQLUser.findByPk(userId);
-    res.status(200).json(updatedUser);
+    if (userUpdated) {
+      res.status(200).json({ message: 'Dane użytkownika zaktualizowane pomyślnie.' });
+    } else {
+      res.status(404).json({ error: 'Użytkownik nie znaleziony.' });
+    }
   } catch (error) {
-    console.error('Błąd edycji użytkownika w MySQL:', error);
+    console.error('Błąd edycji użytkownika:', error);
     res.status(500).json({ error: 'Błąd edycji użytkownika.' });
   }
 });
