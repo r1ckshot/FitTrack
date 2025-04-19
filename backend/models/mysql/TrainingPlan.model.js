@@ -9,7 +9,7 @@ const TrainingPlan = sequelize.define('TrainingPlan', {
     primaryKey: true,
   },
   userId: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.INTEGER, // Konwertujemy na INTEGER
     allowNull: false,
   },
   name: {
@@ -105,6 +105,10 @@ const TrainingExercise = sequelize.define('TrainingExercise', {
   order: {
     type: DataTypes.INTEGER,
     allowNull: false,
+  },
+  gifUrl: {
+    type: DataTypes.STRING, // URL do animacji/gifa ćwiczenia
+    allowNull: true,
   },
 });
 
