@@ -17,10 +17,29 @@ router.post('/training-plans', authenticateToken, async (req, res) => {
     let createdPlanMongo = null;
     let createdPlanMySQL = null;
 
+    // Walidacja danych wejściowych
+    if (!name) {
+      return res.status(400).json({ error: "Nazwa planu treningowego jest wymagana." });
+    }
+    if (days && days.length > 0) {
+      for (const day of days) {
+        if (!day.dayOfWeek || !day.name || typeof day.order !== "number") {
+          return res.status(400).json({ error: "Każdy dzień musi zawierać 'dayOfWeek', 'name' i 'order'." });
+        }
+        if (day.exercises && day.exercises.length > 0) {
+          for (const exercise of day.exercises) {
+            if (!exercise.exerciseId || !exercise.exerciseName || typeof exercise.order !== "number") {
+              return res.status(400).json({ error: "Każde ćwiczenie musi zawierać 'exerciseId', 'exerciseName' i 'order'." });
+            }
+          }
+        }
+      }
+    }
+
     // MongoDB
     if (databaseType === 'mongo' || databaseType === 'both') {
       const trainingPlan = new MongoTrainingPlan({
-        userId: req.user.id,
+        userId: req.user.id, // Zakładam, że user.id to ObjectId w MongoDB
         name,
         description,
         days: days || [], // Include days if provided
@@ -30,45 +49,50 @@ router.post('/training-plans', authenticateToken, async (req, res) => {
 
     // MySQL
     if (databaseType === 'mysql' || databaseType === 'both') {
-      // First create the plan
-      createdPlanMySQL = await MySQLTrainingPlan.create({
-        userId: req.user.id,
-        name,
-        description,
-        dateCreated: new Date(),
-        dateUpdated: new Date(),
-      });
-      
-      // Then create days and exercises if present
-      if (days && days.length > 0 && createdPlanMySQL) {
-        for (const day of days) {
-          const createdDay = await TrainingDay.create({
-            planId: createdPlanMySQL.id,
-            dayOfWeek: day.dayOfWeek,
-            name: day.name,
-            order: day.order
-          });
-          
-          if (day.exercises && day.exercises.length > 0) {
-            for (const exercise of day.exercises) {
-              await TrainingExercise.create({
-                dayId: createdDay.id,
-                exerciseId: exercise.exerciseId,
-                exerciseName: exercise.exerciseName,
-                sets: exercise.sets,
-                reps: exercise.reps,
-                weight: exercise.weight,
-                restTime: exercise.restTime,
-                order: exercise.order
-              });
+      try {
+        // Pierwsze utworzenie planu
+        createdPlanMySQL = await MySQLTrainingPlan.create({
+          userId: parseInt(req.user.id, 10), // Konwersja userId na INTEGER dla MySQL
+          name,
+          description,
+          dateCreated: new Date(),
+          dateUpdated: new Date(),
+        });
+
+        // Utworzenie dni i ćwiczeń, jeśli są obecne
+        if (days && days.length > 0 && createdPlanMySQL) {
+          for (const day of days) {
+            const createdDay = await TrainingDay.create({
+              planId: createdPlanMySQL.id,
+              dayOfWeek: day.dayOfWeek,
+              name: day.name,
+              order: day.order,
+            });
+
+            if (day.exercises && day.exercises.length > 0) {
+              for (const exercise of day.exercises) {
+                await TrainingExercise.create({
+                  dayId: createdDay.id,
+                  exerciseId: exercise.exerciseId,
+                  exerciseName: exercise.exerciseName,
+                  sets: exercise.sets,
+                  reps: exercise.reps,
+                  weight: exercise.weight,
+                  restTime: exercise.restTime,
+                  order: exercise.order,
+                  gifUrl: exercise.gifUrl,
+                });
+              }
             }
           }
         }
-        
-        // Fetch the complete plan with days and exercises
-        createdPlanMySQL = await MySQLTrainingPlan.findByPk(createdPlanMySQL.id, {
-          include: [{ model: TrainingDay, include: [TrainingExercise] }],
-        });
+      } catch (mysqlError) {
+        console.error("Błąd zapisu w MySQL:", mysqlError);
+        // Rollback MongoDB jeśli zapis w MySQL się nie powiódł
+        if (createdPlanMongo) {
+          await MongoTrainingPlan.findByIdAndDelete(createdPlanMongo._id);
+        }
+        throw mysqlError; // Rzucenie błędu dalej
       }
     }
 
@@ -99,11 +123,12 @@ router.get('/training-plans', authenticateToken, async (req, res) => {
 
     // MySQL
     if (databaseType === 'mysql' || databaseType === 'both') {
-      const mysqlPlans = await MySQLTrainingPlan.findAll({ where: { userId: req.user.id } });
+      const mysqlPlans = await MySQLTrainingPlan.findAll({ where: { userId: parseInt(req.user.id, 10) } });
       plans = plans.concat(mysqlPlans);
     }
 
-    res.status(200).json(plans);
+    // Zwracanie planów (priorytet MongoDB, jeśli `both`)
+    res.status(200).json(databaseType === 'both' ? plans.filter(p => p._id) : plans);
   } catch (error) {
     console.error('Błąd pobierania planów treningowych:', error);
     res.status(500).json({ error: 'Błąd pobierania planów treningowych.' });
@@ -148,69 +173,63 @@ router.put('/training-plans/:id', authenticateToken, async (req, res) => {
 
     // MongoDB
     if (databaseType === 'mongo' || databaseType === 'both') {
-      updatedMongo = await MongoTrainingPlan.findByIdAndUpdate(
-        req.params.id,
-        { name, description, isActive, days, dateUpdated: new Date() },
-        { new: true }
-      );
+      // Sprawdzenie, czy id jest ObjectId dla MongoDB
+      if (/^[0-9a-fA-F]{24}$/.test(req.params.id)) {
+        updatedMongo = await MongoTrainingPlan.findByIdAndUpdate(
+          req.params.id,
+          { name, description, isActive, days, dateUpdated: new Date() },
+          { new: true }
+        );
+      }
     }
 
-    // MySQL - more complex as we need to handle relationships
+    // MySQL
     if (databaseType === 'mysql' || databaseType === 'both') {
-      // First update the basic plan info
-      await MySQLTrainingPlan.update(
-        { name, description, isActive, dateUpdated: new Date() },
-        { where: { id: req.params.id } }
-      );
-      
-      // For MySQL, handle days and exercises updates
-      if (days) {
-        // Get existing days to compare/update
-        const existingDays = await TrainingDay.findAll({
-          where: { planId: req.params.id },
-          include: [TrainingExercise]
-        });
-        
-        // Efficient way to handle days: delete all and recreate
-        // For a production app, you might want a more sophisticated comparison
-        await TrainingDay.destroy({ where: { planId: req.params.id } });
-        
-        // Create new days and exercises
-        for (const day of days) {
-          const createdDay = await TrainingDay.create({
-            planId: req.params.id,
-            dayOfWeek: day.dayOfWeek,
-            name: day.name,
-            order: day.order
-          });
-          
-          if (day.exercises && day.exercises.length > 0) {
-            for (const exercise of day.exercises) {
-              await TrainingExercise.create({
-                dayId: createdDay.id,
-                exerciseId: exercise.exerciseId,
-                exerciseName: exercise.exerciseName,
-                sets: exercise.sets,
-                reps: exercise.reps,
-                weight: exercise.weight,
-                restTime: exercise.restTime,
-                order: exercise.order
-              });
+      const mysqlId = parseInt(req.params.id, 10); // Konwertuj id na liczbę całkowitą
+      if (!isNaN(mysqlId)) {
+        await MySQLTrainingPlan.update(
+          { name, description, isActive, dateUpdated: new Date() },
+          { where: { id: mysqlId } }
+        );
+
+        if (days) {
+          await TrainingDay.destroy({ where: { planId: mysqlId } });
+          for (const day of days) {
+            const createdDay = await TrainingDay.create({
+              planId: mysqlId,
+              dayOfWeek: day.dayOfWeek,
+              name: day.name,
+              order: day.order,
+            });
+
+            if (day.exercises && day.exercises.length > 0) {
+              for (const exercise of day.exercises) {
+                await TrainingExercise.create({
+                  dayId: createdDay.id,
+                  exerciseId: exercise.exerciseId,
+                  exerciseName: exercise.exerciseName,
+                  sets: exercise.sets,
+                  reps: exercise.reps,
+                  weight: exercise.weight,
+                  restTime: exercise.restTime,
+                  order: exercise.order,
+                  gifUrl: exercise.gifUrl,
+                });
+              }
             }
           }
         }
+
+        updatedMySQL = await MySQLTrainingPlan.findByPk(mysqlId, {
+          include: [{ model: TrainingDay, include: [TrainingExercise] }],
+        });
       }
-      
-      // Fetch the updated plan
-      updatedMySQL = await MySQLTrainingPlan.findByPk(req.params.id, {
-        include: [{ model: TrainingDay, include: [TrainingExercise] }],
-      });
     }
 
     if (updatedMongo || updatedMySQL) {
-      res.status(200).json({ 
+      res.status(200).json({
         message: 'Plan treningowy został zaktualizowany.',
-        plan: updatedMongo || updatedMySQL
+        plan: updatedMongo || updatedMySQL,
       });
     } else {
       res.status(404).json({ error: 'Nie znaleziono planu treningowego do aktualizacji.' });

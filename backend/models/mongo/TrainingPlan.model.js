@@ -10,6 +10,7 @@ const TrainingExerciseSchema = new Schema({
   weight: { type: Number, default: null }, // Opcjonalnie: ciężar
   restTime: { type: Number, default: null }, // Opcjonalnie: czas odpoczynku (w sekundach)
   order: { type: Number, required: true }, // Kolejność ćwiczeń w dniu
+  gifUrl: { type: String, default: null }, // URL do animacji/gifa ćwiczenia
 });
 
 // Schema for TrainingDay
