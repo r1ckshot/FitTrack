@@ -49,12 +49,33 @@ const TrainingPlanForm = ({ plan, onClose }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+// Przed wysłaniem planu waliduj wszystkie dane
+const validateDaysAndExercises = (days) => {
+  for (const day of days) {
+    if (!day.dayOfWeek || !day.name || typeof day.order !== "number") {
+      return false; // Dzień nie jest kompletny
+    }
+    if (day.exercises && day.exercises.length > 0) {
+      for (const exercise of day.exercises) {
+        if (!exercise.exerciseId || !exercise.exerciseName || typeof exercise.order !== "number") {
+          return false; // Ćwiczenie nie jest kompletne
+        }
+      }
+    }
+  }
+  return true;
+};
 
   // Handle form submission
 const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateForm()) {
+      return;
+    }
+
+    if (!validateDaysAndExercises(formData.days)) {
+      console.error("Niekompletne dane dni treningowych lub ćwiczeń.");
       return;
     }
     
