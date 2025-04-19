@@ -46,6 +46,15 @@ app.use('/api', authRoutes);
 const progressRoutes = require('./routes/progress.routes');
 app.use('/api', progressRoutes);
 
+const trainingPlansRoutes = require('./routes/trainingPlans.routes');
+app.use('/api', trainingPlansRoutes); // Trasy dla Training Plans
+
+const trainingDaysRoutes = require('./routes/trainingDays.routes');
+app.use('/api', trainingDaysRoutes); // Trasy dla Training Days
+
+const trainingExercisesRoutes = require('./routes/trainingExercises.routes');
+app.use('/api', trainingExercisesRoutes); // Trasy dla Training Exercises
+
 // Ustawienie portu i uruchomienie serwera
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
