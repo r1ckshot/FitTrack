@@ -49,8 +49,9 @@ const TrainingPlanForm = ({ plan, onClose }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+
   // Handle form submission
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateForm()) {
@@ -59,12 +60,24 @@ const TrainingPlanForm = ({ plan, onClose }) => {
     
     setSaving(true);
     try {
+      // Create proper structure for submission that matches API expectations
+      const planData = {
+        name: formData.name,
+        description: formData.description,
+        isActive: plan?.isActive || false,
+        days: formData.days.map(day => {
+          // Remove temporary IDs that aren't needed by the backend
+          const { _tempId, ...dayData } = day;
+          return dayData;
+        })
+      };
+      
       if (plan) {
         // Update existing plan
-        await api.put(`/training-plans/${plan._id || plan.id}`, formData);
+        await api.put(`/training-plans/${plan._id || plan.id}`, planData);
       } else {
         // Create new plan
-        await api.post('/training-plans', formData);
+        await api.post('/training-plans', planData);
       }
       onClose(true); // Close with refresh flag
     } catch (error) {

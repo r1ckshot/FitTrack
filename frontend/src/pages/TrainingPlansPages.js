@@ -57,17 +57,17 @@ const TrainingPlansPage = () => {
   const handleDeletePlan = async () => {
     try {
       await api.delete(`/training-plans/${planToDelete._id || planToDelete.id}`);
-      fetchPlans();
-      setDeleteDialogOpen(false);
+      setDeleteDialogOpen(false); // Make sure dialog closes first
       setPlanToDelete(null);
+      fetchPlans(); // Then refresh data
     } catch (error) {
       console.error('Błąd podczas usuwania planu treningowego:', error);
     }
   };
-
   // Handle form close
   const handleFormClose = (refreshNeeded = false) => {
     setOpenForm(false);
+    setSelectedPlan(null);
     if (refreshNeeded) {
       fetchPlans();
     }
@@ -284,6 +284,7 @@ const TrainingPlansPage = () => {
         onClose={() => handleFormClose()}
         fullWidth
         maxWidth="md"
+        disableEscapeKeyDown={false}
       >
         <DialogTitle>
           {selectedPlan ? 'Edytuj Plan Treningowy' : 'Dodaj Nowy Plan Treningowy'}
