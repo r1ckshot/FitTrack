@@ -11,7 +11,7 @@ const databaseType = process.env.DATABASE_TYPE || 'both';
 
 // Tworzenie nowego planu treningowego
 router.post('/training-plans', authenticateToken, async (req, res) => {
-  const { name, description } = req.body;
+  const { name, description, days } = req.body;
 
   try {
     let createdPlanMongo = null;
@@ -23,12 +23,14 @@ router.post('/training-plans', authenticateToken, async (req, res) => {
         userId: req.user.id,
         name,
         description,
+        days: days || [], // Include days if provided
       });
       createdPlanMongo = await trainingPlan.save();
     }
 
     // MySQL
     if (databaseType === 'mysql' || databaseType === 'both') {
+      // First create the plan
       createdPlanMySQL = await MySQLTrainingPlan.create({
         userId: req.user.id,
         name,
@@ -36,6 +38,38 @@ router.post('/training-plans', authenticateToken, async (req, res) => {
         dateCreated: new Date(),
         dateUpdated: new Date(),
       });
+      
+      // Then create days and exercises if present
+      if (days && days.length > 0 && createdPlanMySQL) {
+        for (const day of days) {
+          const createdDay = await TrainingDay.create({
+            planId: createdPlanMySQL.id,
+            dayOfWeek: day.dayOfWeek,
+            name: day.name,
+            order: day.order
+          });
+          
+          if (day.exercises && day.exercises.length > 0) {
+            for (const exercise of day.exercises) {
+              await TrainingExercise.create({
+                dayId: createdDay.id,
+                exerciseId: exercise.exerciseId,
+                exerciseName: exercise.exerciseName,
+                sets: exercise.sets,
+                reps: exercise.reps,
+                weight: exercise.weight,
+                restTime: exercise.restTime,
+                order: exercise.order
+              });
+            }
+          }
+        }
+        
+        // Fetch the complete plan with days and exercises
+        createdPlanMySQL = await MySQLTrainingPlan.findByPk(createdPlanMySQL.id, {
+          include: [{ model: TrainingDay, include: [TrainingExercise] }],
+        });
+      }
     }
 
     if (createdPlanMongo || createdPlanMySQL) {
@@ -106,7 +140,7 @@ router.get('/training-plans/:id', authenticateToken, async (req, res) => {
 
 // Aktualizacja planu treningowego
 router.put('/training-plans/:id', authenticateToken, async (req, res) => {
-  const { name, description, isActive } = req.body;
+  const { name, description, isActive, days } = req.body;
 
   try {
     let updatedMongo = null;
@@ -116,56 +150,74 @@ router.put('/training-plans/:id', authenticateToken, async (req, res) => {
     if (databaseType === 'mongo' || databaseType === 'both') {
       updatedMongo = await MongoTrainingPlan.findByIdAndUpdate(
         req.params.id,
-        { name, description, isActive, dateUpdated: new Date() },
+        { name, description, isActive, days, dateUpdated: new Date() },
         { new: true }
       );
     }
 
-    // MySQL
+    // MySQL - more complex as we need to handle relationships
     if (databaseType === 'mysql' || databaseType === 'both') {
-      updatedMySQL = await MySQLTrainingPlan.update(
+      // First update the basic plan info
+      await MySQLTrainingPlan.update(
         { name, description, isActive, dateUpdated: new Date() },
         { where: { id: req.params.id } }
       );
+      
+      // For MySQL, handle days and exercises updates
+      if (days) {
+        // Get existing days to compare/update
+        const existingDays = await TrainingDay.findAll({
+          where: { planId: req.params.id },
+          include: [TrainingExercise]
+        });
+        
+        // Efficient way to handle days: delete all and recreate
+        // For a production app, you might want a more sophisticated comparison
+        await TrainingDay.destroy({ where: { planId: req.params.id } });
+        
+        // Create new days and exercises
+        for (const day of days) {
+          const createdDay = await TrainingDay.create({
+            planId: req.params.id,
+            dayOfWeek: day.dayOfWeek,
+            name: day.name,
+            order: day.order
+          });
+          
+          if (day.exercises && day.exercises.length > 0) {
+            for (const exercise of day.exercises) {
+              await TrainingExercise.create({
+                dayId: createdDay.id,
+                exerciseId: exercise.exerciseId,
+                exerciseName: exercise.exerciseName,
+                sets: exercise.sets,
+                reps: exercise.reps,
+                weight: exercise.weight,
+                restTime: exercise.restTime,
+                order: exercise.order
+              });
+            }
+          }
+        }
+      }
+      
+      // Fetch the updated plan
+      updatedMySQL = await MySQLTrainingPlan.findByPk(req.params.id, {
+        include: [{ model: TrainingDay, include: [TrainingExercise] }],
+      });
     }
 
     if (updatedMongo || updatedMySQL) {
-      res.status(200).json({ message: 'Plan treningowy został zaktualizowany.' });
+      res.status(200).json({ 
+        message: 'Plan treningowy został zaktualizowany.',
+        plan: updatedMongo || updatedMySQL
+      });
     } else {
       res.status(404).json({ error: 'Nie znaleziono planu treningowego do aktualizacji.' });
     }
   } catch (error) {
     console.error('Błąd aktualizacji planu treningowego:', error);
     res.status(500).json({ error: 'Błąd aktualizacji planu treningowego.' });
-  }
-});
-
-// Usuwanie planu treningowego
-router.delete('/training-plans/:id', authenticateToken, async (req, res) => {
-  try {
-    let deletedMongo = false;
-    let deletedMySQL = false;
-
-    // MongoDB
-    if (databaseType === 'mongo' || databaseType === 'both') {
-      const deletedPlan = await MongoTrainingPlan.findByIdAndDelete(req.params.id);
-      if (deletedPlan) deletedMongo = true;
-    }
-
-    // MySQL
-    if (databaseType === 'mysql' || databaseType === 'both') {
-      const deletedRows = await MySQLTrainingPlan.destroy({ where: { id: req.params.id } });
-      if (deletedRows > 0) deletedMySQL = true;
-    }
-
-    if (deletedMongo || deletedMySQL) {
-      res.status(200).json({ message: 'Plan treningowy został usunięty.' });
-    } else {
-      res.status(404).json({ error: 'Nie znaleziono planu treningowego do usunięcia.' });
-    }
-  } catch (error) {
-    console.error('Błąd usuwania planu treningowego:', error);
-    res.status(500).json({ error: 'Błąd usuwania planu treningowego.' });
   }
 });
 
