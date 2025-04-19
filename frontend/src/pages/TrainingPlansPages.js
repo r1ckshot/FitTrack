@@ -53,17 +53,27 @@ const TrainingPlansPage = () => {
     setDeleteDialogOpen(true);
   };
 
-  // Handle actual deletion
-  const handleDeletePlan = async () => {
-    try {
-      await api.delete(`/training-plans/${planToDelete._id || planToDelete.id}`);
-      setDeleteDialogOpen(false); // Make sure dialog closes first
-      setPlanToDelete(null);
-      fetchPlans(); // Then refresh data
-    } catch (error) {
-      console.error('Błąd podczas usuwania planu treningowego:', error);
+// Handle actual deletion
+const handleDeletePlan = async () => {
+  try {
+    // Użyj ID z MongoDB lub MySQL, w zależności od tego, które jest dostępne
+    const planId = planToDelete._id || planToDelete.id;
+    
+    // Jeśli mamy identyfikator MySQL, wywołaj API z tym ID
+    if (planToDelete.mysqlId) {
+      await api.delete(`/training-plans/${planToDelete.mysqlId}`);
+    } else {
+      await api.delete(`/training-plans/${planId}`);
     }
-  };
+    
+    setDeleteDialogOpen(false);
+    setPlanToDelete(null);
+    fetchPlans();
+  } catch (error) {
+    console.error('Błąd podczas usuwania planu treningowego:', error);
+  }
+};
+
   // Handle form close
   const handleFormClose = (refreshNeeded = false) => {
     setOpenForm(false);
@@ -73,23 +83,27 @@ const TrainingPlansPage = () => {
     }
   };
 
-  // Handle activating a plan
-  const handleActivatePlan = async (plan) => {
-    try {
-      // First deactivate all plans
-      await Promise.all(
-        plans
-          .filter(p => p.isActive)
-          .map(p => api.put(`/training-plans/${p._id || p.id}`, { ...p, isActive: false }))
-      );
-      
-      // Then activate the selected plan
-      await api.put(`/training-plans/${plan._id || plan.id}`, { ...plan, isActive: true });
-      fetchPlans();
-    } catch (error) {
-      console.error('Błąd podczas aktywacji planu treningowego:', error);
-    }
-  };
+// Handle activating a plan
+const handleActivatePlan = async (plan) => {
+  try {
+    // First deactivate all plans
+    await Promise.all(
+      plans
+        .filter(p => p.isActive)
+        .map(p => {
+          const planId = p._id || p.id;
+          return api.put(`/training-plans/${planId}`, { ...p, isActive: false });
+        })
+    );
+    
+    // Then activate the selected plan
+    const planId = plan._id || plan.id;
+    await api.put(`/training-plans/${planId}`, { ...plan, isActive: true });
+    fetchPlans();
+  } catch (error) {
+    console.error('Błąd podczas aktywacji planu treningowego:', error);
+  }
+};
 
   return (
     <Box
