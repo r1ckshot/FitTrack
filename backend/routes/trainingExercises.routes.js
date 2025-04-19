@@ -11,7 +11,7 @@ const databaseType = process.env.DATABASE_TYPE || 'both';
 
 // Dodanie nowego ćwiczenia do dnia treningowego
 router.post('/training-days/:dayId/exercises', authenticateToken, async (req, res) => {
-  const { exerciseId, exerciseName, sets, reps, weight, restTime, order } = req.body;
+  const { exerciseId, exerciseName, sets, reps, weight, restTime, order, gifUrl } = req.body;
 
   try {
     let createdExerciseMongo = null;
@@ -24,7 +24,7 @@ router.post('/training-days/:dayId/exercises', authenticateToken, async (req, re
 
       const day = plan.days.id(req.params.dayId);
       if (day) {
-        const newExercise = { exerciseId, exerciseName, sets, reps, weight, restTime, order };
+        const newExercise = { exerciseId, exerciseName, sets, reps, weight, restTime, order, gifUrl };
         day.exercises.push(newExercise);
         createdExerciseMongo = await plan.save();
       }
@@ -41,6 +41,7 @@ router.post('/training-days/:dayId/exercises', authenticateToken, async (req, re
         weight,
         restTime,
         order,
+        gifUrl, // Dodanie obsługi gifUrl
       });
     }
 
@@ -57,7 +58,7 @@ router.post('/training-days/:dayId/exercises', authenticateToken, async (req, re
 
 // Aktualizacja ćwiczenia
 router.put('/training-exercises/:id', authenticateToken, async (req, res) => {
-  const { sets, reps, weight, restTime, order } = req.body;
+  const { sets, reps, weight, restTime, order, gifUrl } = req.body;
 
   try {
     let updatedExerciseMongo = null;
@@ -75,6 +76,7 @@ router.put('/training-exercises/:id', authenticateToken, async (req, res) => {
         exercise.weight = weight;
         exercise.restTime = restTime;
         exercise.order = order;
+        exercise.gifUrl = gifUrl; // Aktualizacja gifUrl
         updatedExerciseMongo = await plan.save();
       }
     }
@@ -82,7 +84,7 @@ router.put('/training-exercises/:id', authenticateToken, async (req, res) => {
     // MySQL
     if (databaseType === 'mysql' || databaseType === 'both') {
       updatedExerciseMySQL = await MySQLTrainingExercise.update(
-        { sets, reps, weight, restTime, order },
+        { sets, reps, weight, restTime, order, gifUrl }, // Dodanie gifUrl
         { where: { id: req.params.id } }
       );
     }
