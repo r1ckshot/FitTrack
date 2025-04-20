@@ -53,26 +53,22 @@ const TrainingPlansPage = () => {
     setDeleteDialogOpen(true);
   };
 
-// Handle actual deletion
-const handleDeletePlan = async () => {
-  try {
-    // Użyj ID z MongoDB lub MySQL, w zależności od tego, które jest dostępne
-    const planId = planToDelete._id || planToDelete.id;
-    
-    // Jeśli mamy identyfikator MySQL, wywołaj API z tym ID
-    if (planToDelete.mysqlId) {
-      await api.delete(`/training-plans/${planToDelete.mysqlId}`);
-    } else {
-      await api.delete(`/training-plans/${planId}`);
+  // Handle actual deletion
+  const handleDeletePlan = async () => {
+    try {
+      const { _id, mysqlId } = planToDelete;
+
+      // Delete the plan from both MongoDB and MySQL
+      if (_id) await api.delete(`/training-plans/${_id}`);
+      if (mysqlId) await api.delete(`/training-plans/${mysqlId}`);
+
+      setDeleteDialogOpen(false);
+      setPlanToDelete(null);
+      fetchPlans();
+    } catch (error) {
+      console.error('Błąd podczas usuwania planu treningowego:', error);
     }
-    
-    setDeleteDialogOpen(false);
-    setPlanToDelete(null);
-    fetchPlans();
-  } catch (error) {
-    console.error('Błąd podczas usuwania planu treningowego:', error);
-  }
-};
+  };
 
   // Handle form close
   const handleFormClose = (refreshNeeded = false) => {
@@ -86,19 +82,33 @@ const handleDeletePlan = async () => {
 // Handle activating a plan
 const handleActivatePlan = async (plan) => {
   try {
-    // First deactivate all plans
+    // Najpierw deaktywujemy wszystkie aktywne plany
     await Promise.all(
       plans
         .filter(p => p.isActive)
-        .map(p => {
+        .map(async (p) => {
+          // Używamy odpowiedniego ID dla każdej bazy danych
           const planId = p._id || p.id;
-          return api.put(`/training-plans/${planId}`, { ...p, isActive: false });
+          
+          // Jeśli plan ma przypisane ID MySQL, używamy go, w przeciwnym razie używamy ID MongoDB
+          if (p.mysqlId) {
+            await api.put(`/training-plans/${p.mysqlId}`, { ...p, isActive: false });
+          } else {
+            await api.put(`/training-plans/${planId}`, { ...p, isActive: false });
+          }
         })
     );
     
-    // Then activate the selected plan
-    const planId = plan._id || plan.id;
-    await api.put(`/training-plans/${planId}`, { ...plan, isActive: true });
+    // Następnie aktywujemy wybrany plan
+    // Jeśli plan ma przypisane ID MySQL, używamy go, w przeciwnym razie używamy ID MongoDB
+    if (plan.mysqlId) {
+      await api.put(`/training-plans/${plan.mysqlId}`, { ...plan, isActive: true });
+    } else {
+      const planId = plan._id || plan.id;
+      await api.put(`/training-plans/${planId}`, { ...plan, isActive: true });
+    }
+    
+    // Odświeżamy listę planów
     fetchPlans();
   } catch (error) {
     console.error('Błąd podczas aktywacji planu treningowego:', error);
@@ -119,21 +129,21 @@ const handleActivatePlan = async (plan) => {
     >
       <Navbar />
       <BackgroundIcons />
-      
+
       <Box sx={{ padding: '20px', flex: 1 }}>
         <motion.div
           initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.5 }}
         >
-          <Typography 
-            variant="h4" 
-            align="center" 
-            sx={{ 
-              color: 'white', 
-              mb: 4, 
+          <Typography
+            variant="h4"
+            align="center"
+            sx={{
+              color: 'white',
+              mb: 4,
               fontWeight: 700,
-              textShadow: '0px 4px 8px rgba(0,0,0,0.4)'
+              textShadow: '0px 4px 8px rgba(0,0,0,0.4)',
             }}
           >
             Twoje Plany Treningowe
@@ -152,7 +162,7 @@ const handleActivatePlan = async (plan) => {
                 fontWeight: 'bold',
                 '&:hover': {
                   backgroundColor: '#f0f0f0',
-                }
+                },
               }}
             >
               Dodaj Nowy Plan
@@ -188,7 +198,7 @@ const handleActivatePlan = async (plan) => {
                 backgroundColor: '#4CAF50',
                 '&:hover': {
                   backgroundColor: '#3b8a3e',
-                }
+                },
               }}
             >
               Dodaj Plan
@@ -204,29 +214,31 @@ const handleActivatePlan = async (plan) => {
                   transition={{ delay: index * 0.1 }}
                   whileHover={{ y: -5 }}
                 >
-                  <Card 
-                    sx={{ 
+                  <Card
+                    sx={{
                       height: '100%',
                       display: 'flex',
                       flexDirection: 'column',
                       position: 'relative',
                       borderLeft: plan.isActive ? '5px solid #4CAF50' : 'none',
-                      boxShadow: plan.isActive ? '0 0 20px rgba(76,175,80,0.5)' : '0 4px 8px rgba(0,0,0,0.1)'
+                      boxShadow: plan.isActive
+                        ? '0 0 20px rgba(76,175,80,0.5)'
+                        : '0 4px 8px rgba(0,0,0,0.1)',
                     }}
                   >
                     {plan.isActive && (
-                      <Box 
-                        sx={{ 
-                          position: 'absolute', 
-                          top: 10, 
-                          right: 10, 
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          top: 10,
+                          right: 10,
                           backgroundColor: '#4CAF50',
                           color: 'white',
                           px: 1,
                           py: 0.5,
                           borderRadius: 1,
                           fontSize: '0.75rem',
-                          fontWeight: 'bold'
+                          fontWeight: 'bold',
                         }}
                       >
                         AKTYWNY
@@ -234,7 +246,9 @@ const handleActivatePlan = async (plan) => {
                     )}
                     <CardContent sx={{ flexGrow: 1 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                        <FitnessCenterIcon sx={{ fontSize: 30, color: '#4CAF50', mr: 1 }} />
+                        <FitnessCenterIcon
+                          sx={{ fontSize: 30, color: '#4CAF50', mr: 1 }}
+                        />
                         <Typography variant="h6" component="div">
                           {plan.name}
                         </Typography>
@@ -251,15 +265,15 @@ const handleActivatePlan = async (plan) => {
                     </CardContent>
                     <CardActions sx={{ justifyContent: 'space-between', p: 2 }}>
                       <Box>
-                        <IconButton 
-                          size="small" 
+                        <IconButton
+                          size="small"
                           onClick={() => handleEditPlan(plan)}
                           sx={{ color: '#4285F4' }}
                         >
                           <EditIcon />
                         </IconButton>
-                        <IconButton 
-                          size="small" 
+                        <IconButton
+                          size="small"
                           onClick={() => handleDeleteConfirm(plan)}
                           sx={{ color: '#EA4335' }}
                         >
@@ -267,17 +281,17 @@ const handleActivatePlan = async (plan) => {
                         </IconButton>
                       </Box>
                       {!plan.isActive && (
-                        <Button 
-                          size="small" 
+                        <Button
+                          size="small"
                           variant="outlined"
                           onClick={() => handleActivatePlan(plan)}
-                          sx={{ 
-                            color: '#4CAF50', 
+                          sx={{
+                            color: '#4CAF50',
                             borderColor: '#4CAF50',
                             '&:hover': {
                               borderColor: '#3b8a3e',
-                              backgroundColor: 'rgba(76,175,80,0.1)'
-                            }
+                              backgroundColor: 'rgba(76,175,80,0.1)',
+                            },
                           }}
                         >
                           Aktywuj
@@ -304,18 +318,12 @@ const handleActivatePlan = async (plan) => {
           {selectedPlan ? 'Edytuj Plan Treningowy' : 'Dodaj Nowy Plan Treningowy'}
         </DialogTitle>
         <DialogContent dividers>
-          <TrainingPlanForm 
-            plan={selectedPlan} 
-            onClose={handleFormClose} 
-          />
+          <TrainingPlanForm plan={selectedPlan} onClose={handleFormClose} />
         </DialogContent>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-      >
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
         <DialogTitle>Potwierdzenie usunięcia</DialogTitle>
         <DialogContent>
           <Typography>
@@ -324,8 +332,8 @@ const handleActivatePlan = async (plan) => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialogOpen(false)}>Anuluj</Button>
-          <Button 
-            onClick={handleDeletePlan} 
+          <Button
+            onClick={handleDeletePlan}
             sx={{ color: '#EA4335' }}
             autoFocus
           >
