@@ -1,5 +1,8 @@
 import axios from 'axios';
 
+// Cache dla przechowywania danych, aby uniknąć wielokrotnego pobierania
+let exercisesCache = null;
+
 const apiClient = axios.create({
   baseURL: `https://${process.env.REACT_APP_EXERCISEDB_HOST}`,
   headers: {
@@ -8,56 +11,65 @@ const apiClient = axios.create({
   },
 });
 
-// Pobierz listę partii ciała
+// Główna funkcja pobierająca wszystkie ćwiczenia
+export const getAllExercises = async (limit = 0) => {
+  if (exercisesCache) {
+    return exercisesCache;
+  }
+  
+  const response = await apiClient.get(`/exercises?limit=${limit}`);
+  exercisesCache = response.data;
+  return response.data;
+};
+
+// Funkcje wyciągające unikalne wartości z pobranych danych
 export const getBodyParts = async () => {
-  const response = await apiClient.get('/exercises/bodyPartList');
-  return response.data;
+  const exercises = await getAllExercises();
+  const bodyParts = [...new Set(exercises.map(exercise => exercise.bodyPart))];
+  return bodyParts;
 };
 
-// Pobierz ćwiczenia według partii ciała
-export const getExercisesByBodyPart = async (bodyPart) => {
-  const response = await apiClient.get(`/exercises/bodyPart/${bodyPart}`);
-  return response.data;
-};
-
-// Pobierz listę sprzętu
 export const getEquipmentList = async () => {
-  const response = await apiClient.get('/exercises/equipmentList');
-  return response.data;
+  const exercises = await getAllExercises();
+  const equipment = [...new Set(exercises.map(exercise => exercise.equipment))];
+  return equipment;
 };
 
-// Pobierz ćwiczenia według sprzętu
-export const getExercisesByEquipment = async (equipment) => {
-  const response = await apiClient.get(`/exercises/equipment/${equipment}`);
-  return response.data;
-};
-
-// Pobierz listę celów
 export const getTargetList = async () => {
-  const response = await apiClient.get('/exercises/targetList');
-  return response.data;
+  const exercises = await getAllExercises();
+  const targets = [...new Set(exercises.map(exercise => exercise.target))];
+  return targets;
 };
 
-// Pobierz ćwiczenia według celu
+// Funkcje filtrujące korzystające z danych w pamięci
+export const getExercisesByBodyPart = async (bodyPart) => {
+  const exercises = await getAllExercises();
+  return exercises.filter(exercise => exercise.bodyPart === bodyPart);
+};
+
+export const getExercisesByEquipment = async (equipment) => {
+  const exercises = await getAllExercises();
+  return exercises.filter(exercise => exercise.equipment === equipment);
+};
+
 export const getExercisesByTarget = async (target) => {
-  const response = await apiClient.get(`/exercises/target/${target}`);
-  return response.data;
+  const exercises = await getAllExercises();
+  return exercises.filter(exercise => exercise.target === target);
 };
 
-// Pobierz szczegóły ćwiczenia według ID
 export const getExerciseById = async (id) => {
-  const response = await apiClient.get(`/exercises/exercise/${id}`);
-  return response.data;
+  const exercises = await getAllExercises();
+  return exercises.find(exercise => exercise.id === id);
 };
 
-// Pobierz ćwiczenia według nazwy
 export const getExercisesByName = async (name) => {
-  const response = await apiClient.get(`/exercises/name/${name}`);
-  return response.data;
+  const exercises = await getAllExercises();
+  return exercises.filter(exercise => 
+    exercise.name.toLowerCase().includes(name.toLowerCase())
+  );
 };
 
-// Pobierz wszystkie ćwiczenia
-export const getAllExercises = async () => {
-  const response = await apiClient.get('/exercises');
-  return response.data;
+// Funkcja czyszcząca cache - przydatna przy wylogowaniu lub resetowaniu stanu
+export const clearExercisesCache = () => {
+  exercisesCache = null;
 };
