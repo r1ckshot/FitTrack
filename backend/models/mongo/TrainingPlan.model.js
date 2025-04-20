@@ -3,14 +3,17 @@ const { Schema } = mongoose;
 
 // Schema for TrainingExercise
 const TrainingExerciseSchema = new Schema({
-  exerciseId: { type: String, required: true }, // ID ćwiczenia (z API lub własne)
-  exerciseName: { type: String, required: true }, // Nazwa ćwiczenia
-  sets: { type: Number, required: true }, // Liczba serii
-  reps: { type: Number, required: true }, // Liczba powtórzeń
-  weight: { type: Number, default: null }, // Opcjonalnie: ciężar
-  restTime: { type: Number, default: null }, // Opcjonalnie: czas odpoczynku (w sekundach)
-  order: { type: Number, required: true }, // Kolejność ćwiczeń w dniu
-  gifUrl: { type: String, default: null }, // URL do animacji/gifa ćwiczenia
+  exerciseId: { type: String, required: true },
+  exerciseName: { type: String, required: true },
+  sets: { type: Number, required: true },
+  reps: { type: Number, required: true },
+  weight: { type: Number, default: null },
+  restTime: { type: Number, default: null }, 
+  order: { type: Number, required: true },
+  gifUrl: { type: String, default: null },
+  equipment: { type: String, default: null }, 
+  target: { type: String, default: null },    
+  bodyPart: { type: String, default: null }, 
 });
 
 // Schema for TrainingDay

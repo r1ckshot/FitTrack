@@ -102,6 +102,18 @@ const TrainingExercise = sequelize.define('TrainingExercise', {
     type: DataTypes.INTEGER,
     allowNull: true,
   },
+  equipment: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  target: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  bodyPart: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   order: {
     type: DataTypes.INTEGER,
     allowNull: false,

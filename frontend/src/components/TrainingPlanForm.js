@@ -31,7 +31,7 @@ const TrainingPlanForm = ({ plan, onClose }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    
+
     // Clear error for this field if exists
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
@@ -44,103 +44,103 @@ const TrainingPlanForm = ({ plan, onClose }) => {
     if (!formData.name.trim()) {
       newErrors.name = 'Nazwa planu jest wymagana';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-// Przed wysłaniem planu waliduj wszystkie dane
-const validateDaysAndExercises = (days) => {
-  for (const day of days) {
-    if (!day.dayOfWeek || !day.name || typeof day.order !== "number") {
-      return false; // Dzień nie jest kompletny
-    }
-    if (day.exercises && day.exercises.length > 0) {
-      for (const exercise of day.exercises) {
-        if (!exercise.exerciseId || !exercise.exerciseName || typeof exercise.sets !== "number" || typeof exercise.reps !== "number") {
-          return false; // Ćwiczenie nie jest kompletne
-        }
-        // Upewnij się, że każde ćwiczenie ma order
-        if (typeof exercise.order !== "number") {
-          exercise.order = day.exercises.indexOf(exercise) + 1;
+  // Przed wysłaniem planu waliduj wszystkie dane
+  const validateDaysAndExercises = (days) => {
+    for (const day of days) {
+      if (!day.dayOfWeek || !day.name || typeof day.order !== "number") {
+        return false; // Dzień nie jest kompletny
+      }
+      if (day.exercises && day.exercises.length > 0) {
+        for (const exercise of day.exercises) {
+          if (!exercise.exerciseId || !exercise.exerciseName || typeof exercise.sets !== "number" || typeof exercise.reps !== "number") {
+            return false; // Ćwiczenie nie jest kompletne
+          }
+          // Upewnij się, że każde ćwiczenie ma order
+          if (typeof exercise.order !== "number") {
+            exercise.order = day.exercises.indexOf(exercise) + 1;
+          }
         }
       }
     }
-  }
-  return true;
-};
+    return true;
+  };
 
   // Handle form submission
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  if (!validateForm()) {
-    return;
-  }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  // Utwórz kopię formData do modyfikacji
-  const preparedFormData = JSON.parse(JSON.stringify(formData));
-  
-  // Dla każdego dnia, przygotuj ćwiczenia
-  preparedFormData.days.forEach(day => {
-    if (day.exercises && day.exercises.length > 0) {
-      day.exercises = day.exercises.map((exercise, index) => {
-        // Wybierz tylko te pola, które są wymagane przez backend
-        return {
-          exerciseId: exercise.exerciseId,
-          exerciseName: exercise.exerciseName,
-          sets: exercise.sets,
-          reps: exercise.reps,
-          weight: exercise.weight || 0,
-          restTime: exercise.restTime || null,
-          order: exercise.order || (index + 1),
-          gifUrl: exercise.gifUrl
-        };
-      });
+    if (!validateForm()) {
+      return;
     }
-  });
-  
-  if (!validateDaysAndExercises(preparedFormData.days)) {
-    console.error("Niekompletne dane dni treningowych lub ćwiczeń.");
-    setErrors(prev => ({ ...prev, general: "Niepoprawne dane ćwiczeń. Sprawdź czy wszystkie wymagane pola są wypełnione." }));
-    return;
-  }
-  
-  setSaving(true);
-  try {
-    // Create proper structure for submission that matches API expectations
-    const planData = {
-      name: preparedFormData.name,
-      description: preparedFormData.description,
-      isActive: plan?.isActive || false,
-      days: preparedFormData.days.map(day => {
-        // Remove temporary IDs that aren't needed by the backend
-        const { _tempId, ...dayData } = day;
-        return dayData;
-      })
-    };
-    
-    if (plan) {
-      // Update existing plan
-      await api.put(`/training-plans/${plan._id || plan.id}`, planData);
-    } else {
-      // Create new plan
-      await api.post('/training-plans', planData);
+
+    // Utwórz kopię formData do modyfikacji
+    const preparedFormData = JSON.parse(JSON.stringify(formData));
+
+    // Dla każdego dnia, przygotuj ćwiczenia
+    preparedFormData.days.forEach(day => {
+      if (day.exercises && day.exercises.length > 0) {
+        day.exercises = day.exercises.map((exercise, index) => {
+          // Wybierz tylko te pola, które są wymagane przez backend
+          return {
+            exerciseId: exercise.exerciseId,
+            exerciseName: exercise.exerciseName,
+            sets: exercise.sets,
+            reps: exercise.reps,
+            weight: exercise.weight || 0,
+            restTime: exercise.restTime || null,
+            order: exercise.order || (index + 1),
+            gifUrl: exercise.gifUrl
+          };
+        });
+      }
+    });
+
+    if (!validateDaysAndExercises(preparedFormData.days)) {
+      console.error("Niekompletne dane dni treningowych lub ćwiczeń.");
+      setErrors(prev => ({ ...prev, general: "Niepoprawne dane ćwiczeń. Sprawdź czy wszystkie wymagane pola są wypełnione." }));
+      return;
     }
-    onClose(true); // Close with refresh flag
-  } catch (error) {
-    console.error('Błąd podczas zapisywania planu treningowego:', error);
-    setErrors(prev => ({ ...prev, general: "Wystąpił błąd podczas zapisywania planu." }));
-  } finally {
-    setSaving(false);
-  }
-};
+
+    setSaving(true);
+    try {
+      // Create proper structure for submission that matches API expectations
+      const planData = {
+        name: preparedFormData.name,
+        description: preparedFormData.description,
+        isActive: plan?.isActive || false,
+        days: preparedFormData.days.map(day => {
+          // Remove temporary IDs that aren't needed by the backend
+          const { _tempId, ...dayData } = day;
+          return dayData;
+        })
+      };
+
+      if (plan) {
+        // Update existing plan
+        await api.put(`/training-plans/${plan._id || plan.id}`, planData);
+      } else {
+        // Create new plan
+        await api.post('/training-plans', planData);
+      }
+      onClose(true); // Close with refresh flag
+    } catch (error) {
+      console.error('Błąd podczas zapisywania planu treningowego:', error);
+      setErrors(prev => ({ ...prev, general: "Wystąpił błąd podczas zapisywania planu." }));
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // Add new day to plan
   const handleAddDay = () => {
     const newDays = [...formData.days];
     const daysOfWeek = ['Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota', 'Niedziela'];
-    
+
     // Find a day of the week that isn't used yet, or default to "Trening"
     let dayName = 'Trening';
     for (const day of daysOfWeek) {
@@ -149,7 +149,7 @@ const handleSubmit = async (e) => {
         break;
       }
     }
-    
+
     const newDay = {
       dayOfWeek: dayName,
       name: `${dayName} - Trening`,
@@ -158,10 +158,10 @@ const handleSubmit = async (e) => {
       // Add temporary id for React key if it's a new day (will be replaced with real id on save)
       _tempId: Date.now()
     };
-    
+
     newDays.push(newDay);
     setFormData(prev => ({ ...prev, days: newDays }));
-    
+
     // Switch to the new day tab
     setTabValue(newDays.length - 1);
   };
@@ -180,9 +180,9 @@ const handleSubmit = async (e) => {
     newDays.forEach((day, i) => {
       day.order = i + 1;
     });
-    
+
     setFormData(prev => ({ ...prev, days: newDays }));
-    
+
     // Adjust tab value if necessary
     if (tabValue >= newDays.length) {
       setTabValue(Math.max(0, newDays.length - 1));
@@ -204,7 +204,7 @@ const handleSubmit = async (e) => {
         helperText={errors.name}
         sx={{ mb: 2 }}
       />
-      
+
       <TextField
         margin="normal"
         fullWidth
@@ -217,17 +217,17 @@ const handleSubmit = async (e) => {
         rows={2}
         sx={{ mb: 3 }}
       />
-      
+
       <Divider sx={{ my: 3 }} />
-      
+
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
         <Typography variant="h6">Dni treningowe</Typography>
-        <Button 
-          variant="outlined" 
-          startIcon={<AddIcon />} 
+        <Button
+          variant="outlined"
+          startIcon={<AddIcon />}
           onClick={handleAddDay}
-          sx={{ 
-            color: '#4CAF50', 
+          sx={{
+            color: '#4CAF50',
             borderColor: '#4CAF50',
             '&:hover': {
               borderColor: '#3b8a3e',
@@ -238,35 +238,35 @@ const handleSubmit = async (e) => {
           Dodaj dzień
         </Button>
       </Box>
-      
+
       {formData.days.length > 0 ? (
         <>
           <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-            <Tabs 
-              value={tabValue} 
+            <Tabs
+              value={tabValue}
               onChange={(e, newValue) => setTabValue(newValue)}
               variant="scrollable"
               scrollButtons="auto"
             >
               {formData.days.map((day, index) => (
-                <Tab 
-                  key={day._id || day._tempId || index} 
-                  label={day.name || `Dzień ${index + 1}`} 
+                <Tab
+                  key={day._id || day._tempId || index}
+                  label={day.name || `Dzień ${index + 1}`}
                 />
               ))}
             </Tabs>
           </Box>
-          
+
           {formData.days.map((day, index) => (
-            <Box 
-              key={day._id || day._tempId || index} 
+            <Box
+              key={day._id || day._tempId || index}
               role="tabpanel"
               hidden={tabValue !== index}
               sx={{ mb: 3 }}
             >
               {tabValue === index && (
-                <TrainingDayForm 
-                  day={day} 
+                <TrainingDayForm
+                  day={day}
                   onUpdate={(updatedDay) => handleDayUpdate(updatedDay, index)}
                   onRemove={() => handleDayRemove(index)}
                 />
@@ -279,11 +279,11 @@ const handleSubmit = async (e) => {
           <Typography variant="body1" color="text.secondary" gutterBottom>
             Dodaj dni treningowe do swojego planu
           </Typography>
-          <Button 
-            variant="contained" 
-            startIcon={<AddIcon />} 
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
             onClick={handleAddDay}
-            sx={{ 
+            sx={{
               mt: 1,
               backgroundColor: '#4CAF50',
               '&:hover': {
@@ -295,10 +295,10 @@ const handleSubmit = async (e) => {
           </Button>
         </Box>
       )}
-      
+
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4, gap: 2 }}>
-        <Button 
-          variant="outlined" 
+        <Button
+          variant="outlined"
           onClick={() => onClose()}
           disabled={saving}
         >
@@ -309,7 +309,7 @@ const handleSubmit = async (e) => {
           variant="contained"
           disabled={saving}
           startIcon={saving ? <CircularProgress size={20} /> : <SaveIcon />}
-          sx={{ 
+          sx={{
             backgroundColor: '#4CAF50',
             '&:hover': {
               backgroundColor: '#3b8a3e',
