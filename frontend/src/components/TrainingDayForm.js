@@ -77,37 +77,48 @@ const TrainingDayForm = ({ day, onUpdate, onRemove }) => {
   };
 
   // Handle exercise selection/update
-  const handleExerciseSelect = (exercise) => {
-    let updatedExercises;
-    
-    if (exerciseDialogMode === 'add') {
-      // Add new exercise with default sets and reps
-      const newExercise = {
-        ...exercise,
-        sets: 3,
-        reps: 12,
-        weight: 0,
-        notes: ''
-      };
-      updatedExercises = [...dayData.exercises, newExercise];
-    } else {
-      // Update existing exercise preserving sets, reps, etc.
-      updatedExercises = [...dayData.exercises];
-      const existingExercise = updatedExercises[editExerciseIndex];
-      updatedExercises[editExerciseIndex] = {
-        ...exercise,
-        sets: existingExercise.sets,
-        reps: existingExercise.reps,
-        weight: existingExercise.weight,
-        notes: existingExercise.notes
-      };
-    }
-    
-    const updatedDay = { ...dayData, exercises: updatedExercises };
-    setDayData(updatedDay);
-    onUpdate(updatedDay);
-    setOpenExerciseDialog(false);
-  };
+// Handle exercise selection/update
+const handleExerciseSelect = (exercise) => {
+  let updatedExercises;
+  
+  if (exerciseDialogMode === 'add') {
+    // Add new exercise with default sets and reps
+    const newExercise = {
+      exerciseId: exercise.id,  // Dodaj ID ćwiczenia
+      exerciseName: exercise.name,  // Dodaj nazwę ćwiczenia
+      sets: 3,
+      reps: 12,
+      weight: 0,
+      order: dayData.exercises.length + 1,  // Dodaj kolejność
+      notes: '',
+      gifUrl: exercise.gifUrl,  // Zachowaj URL do gifa
+      // Zachowaj dodatkowe informacje do wyświetlania w UI, ale nie będą wysyłane do API
+      bodyPart: exercise.bodyPart,
+      equipment: exercise.equipment,
+      target: exercise.target
+    };
+    updatedExercises = [...dayData.exercises, newExercise];
+  } else {
+    // Update existing exercise preserving sets, reps, etc.
+    updatedExercises = [...dayData.exercises];
+    const existingExercise = updatedExercises[editExerciseIndex];
+    updatedExercises[editExerciseIndex] = {
+      ...existingExercise,
+      exerciseId: exercise.id,  // Aktualizuj ID ćwiczenia
+      exerciseName: exercise.name,  // Aktualizuj nazwę ćwiczenia
+      gifUrl: exercise.gifUrl,  // Aktualizuj URL do gifa
+      // Zachowaj dodatkowe informacje do wyświetlania w UI
+      bodyPart: exercise.bodyPart,
+      equipment: exercise.equipment,
+      target: exercise.target
+    };
+  }
+  
+  const updatedDay = { ...dayData, exercises: updatedExercises };
+  setDayData(updatedDay);
+  onUpdate(updatedDay);
+  setOpenExerciseDialog(false);
+};
 
   // Update exercise details (sets, reps, weight, notes)
   const handleExerciseDetailChange = (index, field, value) => {

@@ -57,8 +57,12 @@ const validateDaysAndExercises = (days) => {
     }
     if (day.exercises && day.exercises.length > 0) {
       for (const exercise of day.exercises) {
-        if (!exercise.exerciseId || !exercise.exerciseName || typeof exercise.order !== "number") {
+        if (!exercise.exerciseId || !exercise.exerciseName || typeof exercise.sets !== "number" || typeof exercise.reps !== "number") {
           return false; // Ćwiczenie nie jest kompletne
+        }
+        // Upewnij się, że każde ćwiczenie ma order
+        if (typeof exercise.order !== "number") {
+          exercise.order = day.exercises.indexOf(exercise) + 1;
         }
       }
     }
@@ -68,45 +72,69 @@ const validateDaysAndExercises = (days) => {
 
   // Handle form submission
 const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
+  e.preventDefault();
+  
+  if (!validateForm()) {
+    return;
+  }
 
-    if (!validateDaysAndExercises(formData.days)) {
-      console.error("Niekompletne dane dni treningowych lub ćwiczeń.");
-      return;
+  // Utwórz kopię formData do modyfikacji
+  const preparedFormData = JSON.parse(JSON.stringify(formData));
+  
+  // Dla każdego dnia, przygotuj ćwiczenia
+  preparedFormData.days.forEach(day => {
+    if (day.exercises && day.exercises.length > 0) {
+      day.exercises = day.exercises.map((exercise, index) => {
+        // Wybierz tylko te pola, które są wymagane przez backend
+        return {
+          exerciseId: exercise.exerciseId,
+          exerciseName: exercise.exerciseName,
+          sets: exercise.sets,
+          reps: exercise.reps,
+          weight: exercise.weight || 0,
+          restTime: exercise.restTime || null,
+          order: exercise.order || (index + 1),
+          gifUrl: exercise.gifUrl
+        };
+      });
     }
+  });
+  
+  if (!validateDaysAndExercises(preparedFormData.days)) {
+    console.error("Niekompletne dane dni treningowych lub ćwiczeń.");
+    setErrors(prev => ({ ...prev, general: "Niepoprawne dane ćwiczeń. Sprawdź czy wszystkie wymagane pola są wypełnione." }));
+    return;
+  }
+  
+  setSaving(true);
+  try {
+    // Create proper structure for submission that matches API expectations
+    const planData = {
+      name: preparedFormData.name,
+      description: preparedFormData.description,
+      isActive: plan?.isActive || false,
+      days: preparedFormData.days.map(day => {
+        // Remove temporary IDs that aren't needed by the backend
+        const { _tempId, ...dayData } = day;
+        return dayData;
+      })
+    };
     
-    setSaving(true);
-    try {
-      // Create proper structure for submission that matches API expectations
-      const planData = {
-        name: formData.name,
-        description: formData.description,
-        isActive: plan?.isActive || false,
-        days: formData.days.map(day => {
-          // Remove temporary IDs that aren't needed by the backend
-          const { _tempId, ...dayData } = day;
-          return dayData;
-        })
-      };
-      
-      if (plan) {
-        // Update existing plan
-        await api.put(`/training-plans/${plan._id || plan.id}`, planData);
-      } else {
-        // Create new plan
-        await api.post('/training-plans', planData);
-      }
-      onClose(true); // Close with refresh flag
-    } catch (error) {
-      console.error('Błąd podczas zapisywania planu treningowego:', error);
-    } finally {
-      setSaving(false);
+    if (plan) {
+      // Update existing plan
+      await api.put(`/training-plans/${plan._id || plan.id}`, planData);
+    } else {
+      // Create new plan
+      await api.post('/training-plans', planData);
     }
-  };
+    onClose(true); // Close with refresh flag
+  } catch (error) {
+    console.error('Błąd podczas zapisywania planu treningowego:', error);
+    setErrors(prev => ({ ...prev, general: "Wystąpił błąd podczas zapisywania planu." }));
+  } finally {
+    setSaving(false);
+  }
+};
 
   // Add new day to plan
   const handleAddDay = () => {
