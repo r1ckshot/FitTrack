@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Button, 
-  Card, 
-  CardContent, 
-  CardMedia, 
-  Grid, 
-  CircularProgress, 
-  Chip, 
+import {
+  Box,
+  Typography,
+  Button,
+  Card,
+  CardContent,
+  CardMedia,
+  Grid,
+  CircularProgress,
+  Chip,
   IconButton,
   TextField,
   InputAdornment
@@ -18,81 +18,119 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import {
+  getAllExercises,
   getBodyParts,
   getEquipmentList,
-  getTargetList,
-  getExercisesByBodyPart,
-  getExercisesByEquipment,
-  getExercisesByTarget,
+  getTargetList
 } from '../services/exerciseService';
 
-const ExerciseSelection = ({ onExerciseSelect, onCancel }) => {
+const ExerciseSelection = ({ onExerciseSelect, onCancel, currentExercise }) => {
   const [step, setStep] = useState(1); // User's current step in the process
+  const [allExercises, setAllExercises] = useState([]); // Store all exercises
   const [bodyParts, setBodyParts] = useState([]);
   const [equipment, setEquipment] = useState([]);
   const [targets, setTargets] = useState([]);
-  const [exercises, setExercises] = useState([]);
+  const [filteredExercises, setFilteredExercises] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredExercises, setFilteredExercises] = useState([]);
-  
+
   // Selection states
   const [selectedBodyPart, setSelectedBodyPart] = useState('');
   const [selectedEquipment, setSelectedEquipment] = useState('');
   const [selectedTarget, setSelectedTarget] = useState('');
 
-  // Fetch initial data: body parts, equipment, and targets
+  // Fetch all data initially in one request
   useEffect(() => {
-    const fetchInitialData = async () => {
+    const fetchData = async () => {
       setLoading(true);
       try {
+        // Fetch all exercises in one request
+        const exercisesData = await getAllExercises();
+        setAllExercises(exercisesData);
+
+        // Extract unique values for filters
         const bodyPartsData = await getBodyParts();
         setBodyParts(bodyPartsData);
-        
+
         const equipmentData = await getEquipmentList();
         setEquipment(equipmentData);
-        
+
         const targetsData = await getTargetList();
         setTargets(targetsData);
       } catch (error) {
-        console.error('Error fetching initial data:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchInitialData();
+    fetchData();
   }, []);
 
-  // Filter exercises when search term changes
+  // Ustawienie filtrów na podstawie edytowanego ćwiczenia
   useEffect(() => {
-    if (exercises.length > 0) {
-      const filtered = exercises.filter(exercise => 
-        exercise.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        exercise.bodyPart.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        exercise.equipment.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        exercise.target.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredExercises(filtered);
+    if (!loading && currentExercise) {
+      setSelectedBodyPart(currentExercise.bodyPart);
+      setSelectedEquipment(currentExercise.equipment);
+      setSelectedTarget(currentExercise.target);
+      setStep(4);
     }
-  }, [searchTerm, exercises]);
+  }, [loading, currentExercise]);
+
+  // Apply filters when selections or search terms change
+  useEffect(() => {
+    if (allExercises.length > 0 && (step === 4 || searchTerm)) {
+      applyFilters();
+    }
+  }, [searchTerm, step, selectedBodyPart, selectedEquipment, selectedTarget]);
+
+  // Function to apply all current filters to the exercises
+  const applyFilters = () => {
+    let results = [...allExercises];
+
+    // Apply bodyPart filter if selected
+    if (selectedBodyPart) {
+      results = results.filter(ex => ex.bodyPart === selectedBodyPart);
+    }
+
+    // Apply equipment filter if selected
+    if (selectedEquipment) {
+      results = results.filter(ex => ex.equipment === selectedEquipment);
+    }
+
+    // Apply target filter if selected
+    if (selectedTarget) {
+      results = results.filter(ex => ex.target === selectedTarget);
+    }
+
+    // Apply search term filter
+    if (searchTerm) {
+      results = results.filter(ex =>
+        ex.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ex.bodyPart.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ex.equipment.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ex.target.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    setFilteredExercises(results);
+  };
 
   // Function to handle body part selection
-  const handleBodyPartSelect = async (bodyPart) => {
+  const handleBodyPartSelect = (bodyPart) => {
     setSelectedBodyPart(bodyPart);
     setStep(2);
   };
 
   // Function to handle equipment selection
-  const handleEquipmentSelect = async (equipment) => {
+  const handleEquipmentSelect = (equipment) => {
     setSelectedEquipment(equipment);
     setStep(3);
   };
 
-  // Function to handle target selection and fetch exercises
-  const handleTargetSelect = async (target) => {
+  // Function to handle target selection
+  const handleTargetSelect = (target) => {
     setSelectedTarget(target);
-    await fetchExercises(selectedBodyPart, selectedEquipment, target);
     setStep(4);
   };
 
@@ -102,57 +140,10 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel }) => {
     setStep(3);
   };
 
-  // Function to skip target selection and fetch exercises
-  const skipTarget = async () => {
+  // Function to skip target selection
+  const skipTarget = () => {
     setSelectedTarget('');
-    await fetchExercises(selectedBodyPart, selectedEquipment, '');
     setStep(4);
-  };
-
-  // Function to fetch exercises based on selections
-  const fetchExercises = async (bodyPart, equipment, target) => {
-    setLoading(true);
-    try {
-      let exercisesData = [];
-      
-      // Prioritize filtering by the most specific criteria
-      if (bodyPart && equipment && target) {
-        // First get exercises by target (most specific)
-        const targetExercises = await getExercisesByTarget(target);
-        // Then filter by body part and equipment
-        exercisesData = targetExercises.filter(
-          ex => ex.bodyPart === bodyPart && ex.equipment === equipment
-        );
-      } else if (bodyPart && equipment) {
-        // Get by equipment and filter by body part
-        const equipmentExercises = await getExercisesByEquipment(equipment);
-        exercisesData = equipmentExercises.filter(ex => ex.bodyPart === bodyPart);
-      } else if (bodyPart && target) {
-        // Get by target and filter by body part
-        const targetExercises = await getExercisesByTarget(target);
-        exercisesData = targetExercises.filter(ex => ex.bodyPart === bodyPart);
-      } else if (equipment && target) {
-        // Get by target and filter by equipment
-        const targetExercises = await getExercisesByTarget(target);
-        exercisesData = targetExercises.filter(ex => ex.equipment === equipment);
-      } else if (bodyPart) {
-        // Get by body part only
-        exercisesData = await getExercisesByBodyPart(bodyPart);
-      } else if (equipment) {
-        // Get by equipment only
-        exercisesData = await getExercisesByEquipment(equipment);
-      } else if (target) {
-        // Get by target only
-        exercisesData = await getExercisesByTarget(target);
-      }
-      
-      setExercises(exercisesData);
-      setFilteredExercises(exercisesData);
-    } catch (error) {
-      console.error('Error fetching exercises:', error);
-    } finally {
-      setLoading(false);
-    }
   };
 
   // Go back to previous step
@@ -174,7 +165,6 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel }) => {
     setSelectedBodyPart('');
     setSelectedEquipment('');
     setSelectedTarget('');
-    setExercises([]);
     setFilteredExercises([]);
     setStep(1);
   };
@@ -198,15 +188,15 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel }) => {
       {(selectedBodyPart || selectedEquipment || selectedTarget) && (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
           {selectedBodyPart && (
-            <Chip 
-              label={`Partia ciała: ${selectedBodyPart}`} 
+            <Chip
+              label={`Partia ciała: ${selectedBodyPart}`}
               onDelete={resetFilters}
               sx={{ backgroundColor: 'rgba(76,175,80,0.2)', color: '#333' }}
             />
           )}
           {selectedEquipment && (
-            <Chip 
-              label={`Sprzęt: ${selectedEquipment}`} 
+            <Chip
+              label={`Sprzęt: ${selectedEquipment}`}
               onDelete={() => {
                 setSelectedEquipment('');
                 setSelectedTarget('');
@@ -216,8 +206,8 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel }) => {
             />
           )}
           {selectedTarget && (
-            <Chip 
-              label={`Cel: ${selectedTarget}`} 
+            <Chip
+              label={`Cel: ${selectedTarget}`}
               onDelete={() => {
                 setSelectedTarget('');
                 setStep(3);
@@ -230,8 +220,8 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel }) => {
 
       {/* Back button for steps 2-4 */}
       {step > 1 && (
-        <IconButton 
-          onClick={goBack} 
+        <IconButton
+          onClick={goBack}
           sx={{ backgroundColor: 'rgba(76,175,80,0.1)', color: '#4CAF50', mb: 2 }}
         >
           <ArrowBackIcon />
@@ -256,9 +246,9 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel }) => {
               <Grid item xs={6} md={4} key={part}>
                 <Button
                   variant="contained"
-                  sx={{ 
-                    backgroundColor: 'rgba(76,175,80,0.8)', 
-                    color: 'white', 
+                  sx={{
+                    backgroundColor: 'rgba(76,175,80,0.8)',
+                    color: 'white',
                     width: '100%',
                     '&:hover': { backgroundColor: 'rgba(76,175,80,0.9)' }
                   }}
@@ -279,25 +269,34 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel }) => {
             Wybierz sprzęt:
           </Typography>
           <Grid container spacing={2}>
-            {equipment.map((item) => (
-              <Grid item xs={6} md={4} key={item}>
-                <Button
-                  variant="contained"
-                  sx={{ 
-                    backgroundColor: 'rgba(76,175,80,0.8)', 
-                    color: 'white', 
-                    width: '100%',
-                    '&:hover': { backgroundColor: 'rgba(76,175,80,0.9)' }
-                  }}
-                  onClick={() => handleEquipmentSelect(item)}
-                >
-                  {item}
-                </Button>
-              </Grid>
-            ))}
+            {/* Filter equipment options based on selected body part */}
+            {equipment
+              .filter(item => {
+                // Only show equipment that has exercises for the selected body part
+                return allExercises.some(ex =>
+                  ex.bodyPart === selectedBodyPart && ex.equipment === item
+                );
+              })
+              .map((item) => (
+                <Grid item xs={6} md={4} key={item}>
+                  <Button
+                    variant="contained"
+                    sx={{
+                      backgroundColor: 'rgba(76,175,80,0.8)',
+                      color: 'white',
+                      width: '100%',
+                      '&:hover': { backgroundColor: 'rgba(76,175,80,0.9)' }
+                    }}
+                    onClick={() => handleEquipmentSelect(item)}
+                  >
+                    {item}
+                  </Button>
+                </Grid>
+              ))
+            }
             <Grid item xs={12}>
-              <Button 
-                variant="outlined" 
+              <Button
+                variant="outlined"
                 sx={{ color: '#4CAF50', borderColor: '#4CAF50' }}
                 onClick={skipEquipment}
               >
@@ -315,25 +314,36 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel }) => {
             Wybierz cel treningowy:
           </Typography>
           <Grid container spacing={2}>
-            {targets.map((target) => (
-              <Grid item xs={6} md={4} key={target}>
-                <Button
-                  variant="contained"
-                  sx={{ 
-                    backgroundColor: 'rgba(76,175,80,0.8)', 
-                    color: 'white', 
-                    width: '100%',
-                    '&:hover': { backgroundColor: 'rgba(76,175,80,0.9)' }
-                  }}
-                  onClick={() => handleTargetSelect(target)}
-                >
-                  {target}
-                </Button>
-              </Grid>
-            ))}
+            {/* Filter target options based on selected body part and equipment */}
+            {targets
+              .filter(target => {
+                // Only show targets that have exercises for the selected filters
+                return allExercises.some(ex =>
+                  ex.bodyPart === selectedBodyPart &&
+                  (selectedEquipment ? ex.equipment === selectedEquipment : true) &&
+                  ex.target === target
+                );
+              })
+              .map((target) => (
+                <Grid item xs={6} md={4} key={target}>
+                  <Button
+                    variant="contained"
+                    sx={{
+                      backgroundColor: 'rgba(76,175,80,0.8)',
+                      color: 'white',
+                      width: '100%',
+                      '&:hover': { backgroundColor: 'rgba(76,175,80,0.9)' }
+                    }}
+                    onClick={() => handleTargetSelect(target)}
+                  >
+                    {target}
+                  </Button>
+                </Grid>
+              ))
+            }
             <Grid item xs={12}>
-              <Button 
-                variant="outlined" 
+              <Button
+                variant="outlined"
                 sx={{ color: '#4CAF50', borderColor: '#4CAF50' }}
                 onClick={skipTarget}
               >
@@ -366,14 +376,14 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel }) => {
               sx={{ width: { xs: '100%', sm: '300px' } }}
             />
           </Box>
-          
+
           {filteredExercises.length === 0 ? (
             <Box sx={{ p: 3, textAlign: 'center', backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: 2 }}>
               <Typography>
                 Nie znaleziono ćwiczeń dla wybranych filtrów. Spróbuj zmienić kryteria wyszukiwania.
               </Typography>
-              <Button 
-                variant="contained" 
+              <Button
+                variant="contained"
                 sx={{ mt: 2, backgroundColor: '#4CAF50' }}
                 onClick={resetFilters}
               >
@@ -386,7 +396,29 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel }) => {
                 <Grid item xs={12} sm={6} md={4} key={exercise.id}>
                   <motion.div whileHover={{ y: -5 }} transition={{ duration: 0.2 }}>
                     <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', cursor: 'pointer' }} onClick={() => onExerciseSelect(exercise)}>
-                      <CardMedia component="img" height="160" image={exercise.gifUrl} alt={exercise.name} />
+                      <Box sx={{
+                        height: '160px',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        backgroundColor: '#f5f5f5',
+                        overflow: 'hidden'
+                      }}>
+                        <CardMedia
+                          component="img"
+                          image={exercise.gifUrl}
+                          alt={exercise.name}
+                          sx={{
+                            maxHeight: '90%',
+                            maxWidth: '90%',
+                            objectFit: 'contain',
+                            transition: 'transform 0.3s',
+                            '&:hover': {
+                              transform: 'scale(1.05)'
+                            }
+                          }}
+                        />
+                      </Box>
                       <CardContent sx={{ flexGrow: 1 }}>
                         <Typography variant="h6">{exercise.name}</Typography>
                         <Typography variant="body2">Partia ciała: {exercise.bodyPart}</Typography>
@@ -394,9 +426,9 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel }) => {
                         <Typography variant="body2">Cel: {exercise.target}</Typography>
                         <Button
                           variant="contained"
-                          sx={{ 
-                            marginTop: '10px', 
-                            backgroundColor: '#4CAF50', 
+                          sx={{
+                            marginTop: '10px',
+                            backgroundColor: '#4CAF50',
                             color: 'white',
                             '&:hover': { backgroundColor: '#3b8a3e' }
                           }}

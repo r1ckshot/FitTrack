@@ -1,22 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, Grid, Card, CardContent, CardActions, IconButton, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
+import { Box, Typography, Button, Grid, Card, CardContent, CardActions, IconButton, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Chip, Tooltip } from '@mui/material';
 import { motion } from 'framer-motion';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import BackgroundIcons from '../components/BackgroundIcons';
 import Navbar from '../components/Navbar';
 import TrainingPlanForm from '../components/TrainingPlanForm';
+import TrainingPlanDetails from '../components/TrainingPlanDetails'; // Nowy komponent do przeglądania
 import api from '../services/api';
 
 const TrainingPlansPage = () => {
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openForm, setOpenForm] = useState(false);
+  const [openDetails, setOpenDetails] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [planToDelete, setPlanToDelete] = useState(null);
+  const [viewMode, setViewMode] = useState('edit'); // 'edit' lub 'view'
 
   // Fetch all training plans
   const fetchPlans = async () => {
@@ -38,13 +42,22 @@ const TrainingPlansPage = () => {
   // Handle opening form for new plan
   const handleCreatePlan = () => {
     setSelectedPlan(null);
+    setViewMode('edit');
     setOpenForm(true);
   };
 
   // Handle opening form for editing plan
   const handleEditPlan = (plan) => {
     setSelectedPlan(plan);
+    setViewMode('edit');
     setOpenForm(true);
+  };
+
+  // Handle opening details view for a plan
+  const handleViewPlan = (plan) => {
+    setSelectedPlan(plan);
+    setViewMode('view');
+    setOpenDetails(true);
   };
 
   // Handle plan deletion confirmation
@@ -58,13 +71,12 @@ const TrainingPlansPage = () => {
     try {
       const { _id, mysqlId } = planToDelete;
 
-      // Delete the plan from both MongoDB and MySQL
-      if (_id) await api.delete(`/training-plans/${_id}`);
-      if (mysqlId) await api.delete(`/training-plans/${mysqlId}`);
+      await api.delete(`/training-plans/${planToDelete._id || planToDelete.mysqlId}`);
 
+      // Zamykamy okno dialogowe i odświeżamy listę planów
       setDeleteDialogOpen(false);
       setPlanToDelete(null);
-      fetchPlans();
+      await fetchPlans(); // Oczekujemy na zakończenie fetchPlans
     } catch (error) {
       console.error('Błąd podczas usuwania planu treningowego:', error);
     }
@@ -79,41 +91,47 @@ const TrainingPlansPage = () => {
     }
   };
 
-// Handle activating a plan
-const handleActivatePlan = async (plan) => {
-  try {
-    // Najpierw deaktywujemy wszystkie aktywne plany
-    await Promise.all(
-      plans
-        .filter(p => p.isActive)
-        .map(async (p) => {
-          // Używamy odpowiedniego ID dla każdej bazy danych
-          const planId = p._id || p.id;
-          
-          // Jeśli plan ma przypisane ID MySQL, używamy go, w przeciwnym razie używamy ID MongoDB
-          if (p.mysqlId) {
-            await api.put(`/training-plans/${p.mysqlId}`, { ...p, isActive: false });
-          } else {
-            await api.put(`/training-plans/${planId}`, { ...p, isActive: false });
-          }
-        })
-    );
-    
-    // Następnie aktywujemy wybrany plan
-    // Jeśli plan ma przypisane ID MySQL, używamy go, w przeciwnym razie używamy ID MongoDB
-    if (plan.mysqlId) {
-      await api.put(`/training-plans/${plan.mysqlId}`, { ...plan, isActive: true });
-    } else {
-      const planId = plan._id || plan.id;
-      await api.put(`/training-plans/${planId}`, { ...plan, isActive: true });
+  // Handle details view close
+  const handleDetailsClose = () => {
+    setOpenDetails(false);
+    setSelectedPlan(null);
+  };
+
+  // Handle activating a plan
+  const handleActivatePlan = async (plan) => {
+    try {
+      // Najpierw deaktywujemy wszystkie aktywne plany
+      await Promise.all(
+        plans
+          .filter(p => p.isActive)
+          .map(async (p) => {
+            // Używamy odpowiedniego ID dla każdej bazy danych
+            const planId = p._id || p.id;
+            
+            // Jeśli plan ma przypisane ID MySQL, używamy go, w przeciwnym razie używamy ID MongoDB
+            if (p.mysqlId) {
+              await api.put(`/training-plans/${p.mysqlId}`, { ...p, isActive: false });
+            } else {
+              await api.put(`/training-plans/${planId}`, { ...p, isActive: false });
+            }
+          })
+      );
+      
+      // Następnie aktywujemy wybrany plan
+      // Jeśli plan ma przypisane ID MySQL, używamy go, w przeciwnym razie używamy ID MongoDB
+      if (plan.mysqlId) {
+        await api.put(`/training-plans/${plan.mysqlId}`, { ...plan, isActive: true });
+      } else {
+        const planId = plan._id || plan.id;
+        await api.put(`/training-plans/${planId}`, { ...plan, isActive: true });
+      }
+      
+      // Odświeżamy listę planów
+      fetchPlans();
+    } catch (error) {
+      console.error('Błąd podczas aktywacji planu treningowego:', error);
     }
-    
-    // Odświeżamy listę planów
-    fetchPlans();
-  } catch (error) {
-    console.error('Błąd podczas aktywacji planu treningowego:', error);
-  }
-};
+  };
 
   return (
     <Box
@@ -175,35 +193,41 @@ const handleActivatePlan = async (plan) => {
             <CircularProgress sx={{ color: 'white' }} />
           </Box>
         ) : plans.length === 0 ? (
-          <Box
-            sx={{
-              backgroundColor: 'rgba(255,255,255,0.8)',
-              borderRadius: 2,
-              p: 3,
-              textAlign: 'center',
-            }}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
           >
-            <Typography variant="h6" gutterBottom>
-              Nie masz jeszcze żadnych planów treningowych
-            </Typography>
-            <Typography variant="body1" gutterBottom>
-              Stwórz swój pierwszy plan treningowy, aby zacząć.
-            </Typography>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={handleCreatePlan}
+            <Box
               sx={{
-                mt: 2,
-                backgroundColor: '#4CAF50',
-                '&:hover': {
-                  backgroundColor: '#3b8a3e',
-                },
+                backgroundColor: 'rgba(255,255,255,0.8)',
+                borderRadius: 2,
+                p: 3,
+                textAlign: 'center',
               }}
             >
-              Dodaj Plan
-            </Button>
-          </Box>
+              <Typography variant="h6" gutterBottom>
+                Nie masz jeszcze żadnych planów treningowych
+              </Typography>
+              <Typography variant="body1" gutterBottom>
+                Stwórz swój pierwszy plan treningowy, aby zacząć.
+              </Typography>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={handleCreatePlan}
+                sx={{
+                  mt: 2,
+                  backgroundColor: '#4CAF50',
+                  '&:hover': {
+                    backgroundColor: '#3b8a3e',
+                  },
+                }}
+              >
+                Dodaj Plan
+              </Button>
+            </Box>
+          </motion.div>
         ) : (
           <Grid container spacing={3}>
             {plans.map((plan, index) => (
@@ -227,33 +251,56 @@ const handleActivatePlan = async (plan) => {
                     }}
                   >
                     {plan.isActive && (
-                      <Box
+                      <Chip
+                        label="AKTYWNY"
+                        size="small"
                         sx={{
                           position: 'absolute',
                           top: 10,
                           right: 10,
                           backgroundColor: '#4CAF50',
                           color: 'white',
-                          px: 1,
-                          py: 0.5,
-                          borderRadius: 1,
-                          fontSize: '0.75rem',
                           fontWeight: 'bold',
+                          zIndex: 1,
                         }}
-                      >
-                        AKTYWNY
-                      </Box>
+                      />
                     )}
-                    <CardContent sx={{ flexGrow: 1 }}>
+                    <CardContent sx={{ flexGrow: 1, pt: plan.isActive ? 4 : 2 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                         <FitnessCenterIcon
-                          sx={{ fontSize: 30, color: '#4CAF50', mr: 1 }}
+                          sx={{ fontSize: 30, color: '#4CAF50', mr: 1, flexShrink: 0 }}
                         />
-                        <Typography variant="h6" component="div">
-                          {plan.name}
-                        </Typography>
+                        <Tooltip title={plan.name} placement="top">
+                          <Typography 
+                            variant="h6" 
+                            component="div"
+                            sx={{
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              lineHeight: '1.2',
+                              maxHeight: '2.4em'
+                            }}  
+                          >
+                            {plan.name}
+                          </Typography>
+                        </Tooltip>
                       </Box>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      <Typography 
+                        variant="body2" 
+                        color="text.secondary" 
+                        sx={{ 
+                          mb: 2,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 3,
+                          WebkitBoxOrient: 'vertical',
+                          height: '3.6em'
+                        }}
+                      >
                         {plan.description || 'Brak opisu'}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
@@ -265,20 +312,33 @@ const handleActivatePlan = async (plan) => {
                     </CardContent>
                     <CardActions sx={{ justifyContent: 'space-between', p: 2 }}>
                       <Box>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleEditPlan(plan)}
-                          sx={{ color: '#4285F4' }}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleDeleteConfirm(plan)}
-                          sx={{ color: '#EA4335' }}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
+                        <Tooltip title="Przeglądaj">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleViewPlan(plan)}
+                            sx={{ color: '#FBBC05' }}
+                          >
+                            <VisibilityIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Edytuj">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleEditPlan(plan)}
+                            sx={{ color: '#4285F4' }}
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Usuń">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleDeleteConfirm(plan)}
+                            sx={{ color: '#EA4335' }}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Tooltip>
                       </Box>
                       {!plan.isActive && (
                         <Button
@@ -320,6 +380,31 @@ const handleActivatePlan = async (plan) => {
         <DialogContent dividers>
           <TrainingPlanForm plan={selectedPlan} onClose={handleFormClose} />
         </DialogContent>
+      </Dialog>
+
+      {/* Training Plan Details Dialog */}
+      <Dialog
+        open={openDetails}
+        onClose={handleDetailsClose}
+        fullWidth
+        maxWidth="md"
+      >
+        <DialogTitle>Szczegóły Planu Treningowego</DialogTitle>
+        <DialogContent dividers>
+          {selectedPlan && <TrainingPlanDetails plan={selectedPlan} />}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDetailsClose}>Zamknij</Button>
+          <Button 
+            onClick={() => {
+              handleDetailsClose();
+              handleEditPlan(selectedPlan);
+            }}
+            color="primary"
+          >
+            Edytuj Plan
+          </Button>
+        </DialogActions>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
