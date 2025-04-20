@@ -4,7 +4,7 @@ const MySQLModels = require('../models/mysql/TrainingPlan.model');
 const { authenticateToken } = require('../middlewares/auth.middleware');
 
 const router = express.Router();
-const { TrainingDay: MySQLTrainingDay, TrainingExercise } = MySQLModels;
+const { TrainingDay: MySQLTrainingDay, TrainingPlan: MySQLTrainingPlan, TrainingExercise } = MySQLModels;
 
 // Pobranie typu bazy danych z .env
 const databaseType = process.env.DATABASE_TYPE || 'both';
@@ -16,6 +16,8 @@ router.post('/training-plans/:planId/days', authenticateToken, async (req, res) 
   try {
     let createdDayMongo = null;
     let createdDayMySQL = null;
+    let newDayMongoId = null;
+    let newDayMySQLId = null;
 
     // MongoDB
     if (databaseType === 'mongo' || databaseType === 'both') {
@@ -29,7 +31,10 @@ router.post('/training-plans/:planId/days', authenticateToken, async (req, res) 
         exercises: [],
       };
       plan.days.push(newDay);
-      createdDayMongo = await plan.save();
+      await plan.save();
+      // Pobierz ID utworzonego dnia
+      newDayMongoId = plan.days[plan.days.length - 1]._id;
+      createdDayMongo = plan.days[plan.days.length - 1];
     }
 
     // MySQL
@@ -40,13 +45,23 @@ router.post('/training-plans/:planId/days', authenticateToken, async (req, res) 
         name,
         order,
       });
+      newDayMySQLId = createdDayMySQL.id;
     }
 
     if (createdDayMongo || createdDayMySQL) {
-      res.status(201).json({
+      const responseData = {
         message: 'Dzień treningowy został dodany.',
-        day: databaseType === 'both' ? { mongo: createdDayMongo, mysql: createdDayMySQL } : createdDayMongo || createdDayMySQL,
-      });
+        day: {
+          mongoId: newDayMongoId,
+          mysqlId: newDayMySQLId,
+          dayOfWeek,
+          name,
+          order,
+          exercises: []
+        }
+      };
+      
+      res.status(201).json(responseData);
     } else {
       res.status(500).json({ error: 'Nie udało się dodać dnia treningowego.' });
     }
@@ -58,36 +73,58 @@ router.post('/training-plans/:planId/days', authenticateToken, async (req, res) 
 
 // Aktualizacja dnia treningowego
 router.put('/training-days/:id', authenticateToken, async (req, res) => {
-  const { dayOfWeek, name, order } = req.body;
+  const { dayOfWeek, name, order, mongoId, mysqlId } = req.body;
+  const dayId = req.params.id;
 
   try {
     let updatedDayMongo = null;
     let updatedDayMySQL = null;
+    let updateSuccess = false;
 
     // MongoDB
-    if (databaseType === 'mongo' || databaseType === 'both') {
-      const plan = await MongoTrainingPlan.findOne({ 'days._id': req.params.id });
-      if (!plan) return res.status(404).json({ error: 'Dzień treningowy nie został znaleziony.' });
-
-      const day = plan.days.id(req.params.id);
-      if (day) {
-        day.dayOfWeek = dayOfWeek;
-        day.name = name;
-        day.order = order;
-        updatedDayMongo = await plan.save();
+    if ((databaseType === 'mongo' || databaseType === 'both') && (mongoId || /^[0-9a-fA-F]{24}$/.test(dayId))) {
+      const mongoIdToUse = mongoId || dayId; // Użyj podanego mongoId lub dayId
+      const plan = await MongoTrainingPlan.findOne({ 'days._id': mongoIdToUse });
+      if (plan) {
+        const day = plan.days.id(mongoIdToUse);
+        if (day) {
+          day.dayOfWeek = dayOfWeek;
+          day.name = name;
+          day.order = order;
+          await plan.save();
+          updatedDayMongo = day;
+          updateSuccess = true;
+        }
       }
     }
 
     // MySQL
-    if (databaseType === 'mysql' || databaseType === 'both') {
-      updatedDayMySQL = await MySQLTrainingDay.update(
+    if ((databaseType === 'mysql' || databaseType === 'both') && (mysqlId || !isNaN(parseInt(dayId, 10)))) {
+      const mysqlIdToUse = mysqlId || parseInt(dayId, 10);
+      const [updatedRows] = await MySQLTrainingDay.update(
         { dayOfWeek, name, order },
-        { where: { id: req.params.id } }
+        { where: { id: mysqlIdToUse } }
       );
+      
+      if (updatedRows > 0) {
+        updatedDayMySQL = await MySQLTrainingDay.findByPk(mysqlIdToUse);
+        updateSuccess = true;
+      }
     }
 
-    if (updatedDayMongo || updatedDayMySQL) {
-      res.status(200).json({ message: 'Dzień treningowy został zaktualizowany.' });
+    if (updateSuccess) {
+      const responseData = {
+        message: 'Dzień treningowy został zaktualizowany.',
+        day: {
+          mongoId: updatedDayMongo ? updatedDayMongo._id : null,
+          mysqlId: updatedDayMySQL ? updatedDayMySQL.id : null,
+          dayOfWeek,
+          name,
+          order
+        }
+      };
+      
+      res.status(200).json(responseData);
     } else {
       res.status(404).json({ error: 'Nie znaleziono dnia treningowego do aktualizacji.' });
     }
@@ -99,28 +136,42 @@ router.put('/training-days/:id', authenticateToken, async (req, res) => {
 
 // Usuwanie dnia treningowego
 router.delete('/training-days/:id', authenticateToken, async (req, res) => {
+  const dayId = req.params.id;
+  const { mongoId, mysqlId } = req.query; // Dodane query params dla jednoznacznej identyfikacji
+
   try {
     let deletedDayMongo = false;
     let deletedDayMySQL = false;
 
     // MongoDB
-    if (databaseType === 'mongo' || databaseType === 'both') {
-      const plan = await MongoTrainingPlan.findOne({ 'days._id': req.params.id });
-      if (!plan) return res.status(404).json({ error: 'Dzień treningowy nie został znaleziony.' });
-
-      plan.days.id(req.params.id).remove();
-      await plan.save();
-      deletedDayMongo = true;
+    if ((databaseType === 'mongo' || databaseType === 'both') && (mongoId || /^[0-9a-fA-F]{24}$/.test(dayId))) {
+      const mongoIdToUse = mongoId || dayId;
+      const plan = await MongoTrainingPlan.findOne({ 'days._id': mongoIdToUse });
+      if (plan) {
+        const dayToRemove = plan.days.id(mongoIdToUse);
+        if (dayToRemove) {
+          dayToRemove.remove();
+          await plan.save();
+          deletedDayMongo = true;
+        }
+      }
     }
 
     // MySQL
-    if (databaseType === 'mysql' || databaseType === 'both') {
-      const deletedRows = await MySQLTrainingDay.destroy({ where: { id: req.params.id } });
+    if ((databaseType === 'mysql' || databaseType === 'both') && (mysqlId || !isNaN(parseInt(dayId, 10)))) {
+      const mysqlIdToUse = mysqlId || parseInt(dayId, 10);
+      const deletedRows = await MySQLTrainingDay.destroy({ where: { id: mysqlIdToUse } });
       if (deletedRows > 0) deletedDayMySQL = true;
     }
 
     if (deletedDayMongo || deletedDayMySQL) {
-      res.status(200).json({ message: 'Dzień treningowy został usunięty.' });
+      res.status(200).json({ 
+        message: 'Dzień treningowy został usunięty.',
+        deleted: {
+          mongo: deletedDayMongo,
+          mysql: deletedDayMySQL
+        }
+      });
     } else {
       res.status(404).json({ error: 'Nie znaleziono dnia treningowego do usunięcia.' });
     }

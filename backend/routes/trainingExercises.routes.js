@@ -4,7 +4,7 @@ const MySQLModels = require('../models/mysql/TrainingPlan.model');
 const { authenticateToken } = require('../middlewares/auth.middleware');
 
 const router = express.Router();
-const { TrainingExercise: MySQLTrainingExercise } = MySQLModels;
+const { TrainingExercise: MySQLTrainingExercise, TrainingDay: MySQLTrainingDay } = MySQLModels;
 
 // Pobranie typu bazy danych z .env
 const databaseType = process.env.DATABASE_TYPE || 'both';
@@ -12,41 +12,74 @@ const databaseType = process.env.DATABASE_TYPE || 'both';
 // Dodanie nowego ćwiczenia do dnia treningowego
 router.post('/training-days/:dayId/exercises', authenticateToken, async (req, res) => {
   const { exerciseId, exerciseName, sets, reps, weight, restTime, order, gifUrl } = req.body;
+  const { mongoDayId } = req.query; // Dodanie opcjonalnego ID MongoDB
 
   try {
     let createdExerciseMongo = null;
     let createdExerciseMySQL = null;
+    let newExerciseMongoId = null;
+    let newExerciseMySQLId = null;
 
     // MongoDB
-    if (databaseType === 'mongo' || databaseType === 'both') {
-      const plan = await MongoTrainingPlan.findOne({ 'days._id': req.params.dayId });
-      if (!plan) return res.status(404).json({ error: 'Dzień treningowy nie został znaleziony.' });
+    if ((databaseType === 'mongo' || databaseType === 'both') && (mongoDayId || /^[0-9a-fA-F]{24}$/.test(req.params.dayId))) {
+      const mongoIdToUse = mongoDayId || req.params.dayId;
+      const plan = await MongoTrainingPlan.findOne({ 'days._id': mongoIdToUse });
+      if (!plan) return res.status(404).json({ error: 'Dzień treningowy nie został znaleziony w MongoDB.' });
 
-      const day = plan.days.id(req.params.dayId);
+      const day = plan.days.id(mongoIdToUse);
       if (day) {
         const newExercise = { exerciseId, exerciseName, sets, reps, weight, restTime, order, gifUrl };
         day.exercises.push(newExercise);
-        createdExerciseMongo = await plan.save();
+        await plan.save();
+        
+        // Znajdź dodane ćwiczenie
+        newExerciseMongoId = day.exercises[day.exercises.length - 1]._id;
+        createdExerciseMongo = day.exercises[day.exercises.length - 1];
       }
     }
 
     // MySQL
     if (databaseType === 'mysql' || databaseType === 'both') {
-      createdExerciseMySQL = await MySQLTrainingExercise.create({
-        dayId: req.params.dayId,
-        exerciseId,
-        exerciseName,
-        sets,
-        reps,
-        weight,
-        restTime,
-        order,
-        gifUrl, // Dodanie obsługi gifUrl
-      });
+      const mysqlDayId = parseInt(req.params.dayId, 10);
+      // Sprawdź czy mysqlDayId jest prawidłowym ID
+      if (!isNaN(mysqlDayId)) {
+        const day = await MySQLTrainingDay.findByPk(mysqlDayId);
+        if (!day) return res.status(404).json({ error: 'Dzień treningowy nie został znaleziony w MySQL.' });
+        
+        createdExerciseMySQL = await MySQLTrainingExercise.create({
+          dayId: mysqlDayId,
+          exerciseId,
+          exerciseName,
+          sets,
+          reps,
+          weight,
+          restTime,
+          order,
+          gifUrl,
+        });
+        
+        newExerciseMySQLId = createdExerciseMySQL.id;
+      }
     }
 
     if (createdExerciseMongo || createdExerciseMySQL) {
-      res.status(201).json({ message: 'Ćwiczenie zostało dodane.', exercise: createdExerciseMongo || createdExerciseMySQL });
+      const responseData = {
+        message: 'Ćwiczenie zostało dodane.',
+        exercise: {
+          mongoId: newExerciseMongoId,
+          mysqlId: newExerciseMySQLId,
+          exerciseId,
+          exerciseName,
+          sets,
+          reps,
+          weight,
+          restTime,
+          order,
+          gifUrl
+        }
+      };
+      
+      res.status(201).json(responseData);
     } else {
       res.status(500).json({ error: 'Nie udało się dodać ćwiczenia.' });
     }
@@ -58,39 +91,90 @@ router.post('/training-days/:dayId/exercises', authenticateToken, async (req, re
 
 // Aktualizacja ćwiczenia
 router.put('/training-exercises/:id', authenticateToken, async (req, res) => {
-  const { sets, reps, weight, restTime, order, gifUrl } = req.body;
+  const { exerciseId, exerciseName, sets, reps, weight, restTime, order, gifUrl, mongoId, mysqlId } = req.body;
+  const exerciseParamId = req.params.id;
 
   try {
     let updatedExerciseMongo = null;
     let updatedExerciseMySQL = null;
+    let updateSuccess = false;
 
     // MongoDB
-    if (databaseType === 'mongo' || databaseType === 'both') {
-      const plan = await MongoTrainingPlan.findOne({ 'days.exercises._id': req.params.id });
-      if (!plan) return res.status(404).json({ error: 'Ćwiczenie nie zostało znalezione.' });
-
-      const exercise = plan.days.reduce((acc, day) => acc || day.exercises.id(req.params.id), null);
-      if (exercise) {
-        exercise.sets = sets;
-        exercise.reps = reps;
-        exercise.weight = weight;
-        exercise.restTime = restTime;
-        exercise.order = order;
-        exercise.gifUrl = gifUrl; // Aktualizacja gifUrl
-        updatedExerciseMongo = await plan.save();
+    if ((databaseType === 'mongo' || databaseType === 'both') && (mongoId || /^[0-9a-fA-F]{24}$/.test(exerciseParamId))) {
+      const mongoIdToUse = mongoId || exerciseParamId;
+      const plan = await MongoTrainingPlan.findOne({ 'days.exercises._id': mongoIdToUse });
+      if (plan) {
+        let exerciseFound = false;
+        
+        // Znajdź ćwiczenie w zagnieżdżonych dniach
+        for (const day of plan.days) {
+          const exercise = day.exercises.id(mongoIdToUse);
+          if (exercise) {
+            if (exerciseId) exercise.exerciseId = exerciseId;
+            if (exerciseName) exercise.exerciseName = exerciseName;
+            if (sets !== undefined) exercise.sets = sets;
+            if (reps !== undefined) exercise.reps = reps;
+            if (weight !== undefined) exercise.weight = weight;
+            if (restTime !== undefined) exercise.restTime = restTime;
+            if (order !== undefined) exercise.order = order;
+            if (gifUrl !== undefined) exercise.gifUrl = gifUrl;
+            
+            exerciseFound = true;
+            updatedExerciseMongo = exercise;
+            break;
+          }
+        }
+        
+        if (exerciseFound) {
+          await plan.save();
+          updateSuccess = true;
+        }
       }
     }
 
     // MySQL
-    if (databaseType === 'mysql' || databaseType === 'both') {
-      updatedExerciseMySQL = await MySQLTrainingExercise.update(
-        { sets, reps, weight, restTime, order, gifUrl }, // Dodanie gifUrl
-        { where: { id: req.params.id } }
+    if ((databaseType === 'mysql' || databaseType === 'both') && (mysqlId || !isNaN(parseInt(exerciseParamId, 10)))) {
+      const mysqlIdToUse = mysqlId || parseInt(exerciseParamId, 10);
+      
+      const updateData = {};
+      if (exerciseId) updateData.exerciseId = exerciseId;
+      if (exerciseName) updateData.exerciseName = exerciseName;
+      if (sets !== undefined) updateData.sets = sets;
+      if (reps !== undefined) updateData.reps = reps;
+      if (weight !== undefined) updateData.weight = weight;
+      if (restTime !== undefined) updateData.restTime = restTime;
+      if (order !== undefined) updateData.order = order;
+      if (gifUrl !== undefined) updateData.gifUrl = gifUrl;
+      
+      const [updatedRows] = await MySQLTrainingExercise.update(
+        updateData,
+        { where: { id: mysqlIdToUse } }
       );
+      
+      if (updatedRows > 0) {
+        updatedExerciseMySQL = await MySQLTrainingExercise.findByPk(mysqlIdToUse);
+        updateSuccess = true;
+      }
     }
 
-    if (updatedExerciseMongo || updatedExerciseMySQL) {
-      res.status(200).json({ message: 'Ćwiczenie zostało zaktualizowane.' });
+    if (updateSuccess) {
+      const responseData = {
+        message: 'Ćwiczenie zostało zaktualizowane.',
+        exercise: {
+          mongoId: updatedExerciseMongo ? updatedExerciseMongo._id : null,
+          mysqlId: updatedExerciseMySQL ? updatedExerciseMySQL.id : null,
+          exerciseId: updatedExerciseMongo?.exerciseId || updatedExerciseMySQL?.exerciseId,
+          exerciseName: updatedExerciseMongo?.exerciseName || updatedExerciseMySQL?.exerciseName,
+          sets: updatedExerciseMongo?.sets || updatedExerciseMySQL?.sets,
+          reps: updatedExerciseMongo?.reps || updatedExerciseMySQL?.reps,
+          weight: updatedExerciseMongo?.weight || updatedExerciseMySQL?.weight,
+          restTime: updatedExerciseMongo?.restTime || updatedExerciseMySQL?.restTime,
+          order: updatedExerciseMongo?.order || updatedExerciseMySQL?.order,
+          gifUrl: updatedExerciseMongo?.gifUrl || updatedExerciseMySQL?.gifUrl
+        }
+      };
+      
+      res.status(200).json(responseData);
     } else {
       res.status(404).json({ error: 'Nie znaleziono ćwiczenia do aktualizacji.' });
     }
@@ -102,31 +186,52 @@ router.put('/training-exercises/:id', authenticateToken, async (req, res) => {
 
 // Usuwanie ćwiczenia
 router.delete('/training-exercises/:id', authenticateToken, async (req, res) => {
+  const exerciseId = req.params.id;
+  const { mongoId, mysqlId } = req.query; // Dodane query params dla jednoznacznej identyfikacji
+
   try {
     let deletedExerciseMongo = false;
     let deletedExerciseMySQL = false;
 
     // MongoDB
-    if (databaseType === 'mongo' || databaseType === 'both') {
-      const plan = await MongoTrainingPlan.findOne({ 'days.exercises._id': req.params.id });
-      if (!plan) return res.status(404).json({ error: 'Ćwiczenie nie zostało znalezione.' });
-
-      const day = plan.days.find((d) => d.exercises.id(req.params.id));
-      if (day) {
-        day.exercises.id(req.params.id).remove();
-        await plan.save();
-        deletedExerciseMongo = true;
+    if ((databaseType === 'mongo' || databaseType === 'both') && (mongoId || /^[0-9a-fA-F]{24}$/.test(exerciseId))) {
+      const mongoIdToUse = mongoId || exerciseId;
+      const plan = await MongoTrainingPlan.findOne({ 'days.exercises._id': mongoIdToUse });
+      if (plan) {
+        let exerciseRemoved = false;
+        
+        // Znajdź i usuń ćwiczenie w zagnieżdżonych dniach
+        for (const day of plan.days) {
+          const exercise = day.exercises.id(mongoIdToUse);
+          if (exercise) {
+            exercise.remove();
+            exerciseRemoved = true;
+            break;
+          }
+        }
+        
+        if (exerciseRemoved) {
+          await plan.save();
+          deletedExerciseMongo = true;
+        }
       }
     }
 
     // MySQL
-    if (databaseType === 'mysql' || databaseType === 'both') {
-      const deletedRows = await MySQLTrainingExercise.destroy({ where: { id: req.params.id } });
+    if ((databaseType === 'mysql' || databaseType === 'both') && (mysqlId || !isNaN(parseInt(exerciseId, 10)))) {
+      const mysqlIdToUse = mysqlId || parseInt(exerciseId, 10);
+      const deletedRows = await MySQLTrainingExercise.destroy({ where: { id: mysqlIdToUse } });
       if (deletedRows > 0) deletedExerciseMySQL = true;
     }
 
     if (deletedExerciseMongo || deletedExerciseMySQL) {
-      res.status(200).json({ message: 'Ćwiczenie zostało usunięte.' });
+      res.status(200).json({ 
+        message: 'Ćwiczenie zostało usunięte.',
+        deleted: {
+          mongo: deletedExerciseMongo,
+          mysql: deletedExerciseMySQL
+        }
+      });
     } else {
       res.status(404).json({ error: 'Nie znaleziono ćwiczenia do usunięcia.' });
     }
