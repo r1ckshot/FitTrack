@@ -17,6 +17,30 @@ function getMySQLUserId(user) {
   return 1; // Domyślne ID
 }
 
+// Bezpieczna operacja MongoDB - ignoruje błędy połączenia gdy baza jest niedostępna
+async function safeMongoOperation(operation, fallback = null) {
+  if (databaseType !== 'mongo' && databaseType !== 'both') return fallback;
+  
+  try {
+    return await operation();
+  } catch (error) {
+    console.log('MongoDB operation failed:', error.message);
+    return fallback;
+  }
+}
+
+// Bezpieczna operacja MySQL - ignoruje błędy połączenia gdy baza jest niedostępna
+async function safeMySQLOperation(operation, fallback = null) {
+  if (databaseType !== 'mysql' && databaseType !== 'both') return fallback;
+  
+  try {
+    return await operation();
+  } catch (error) {
+    console.log('MySQL operation failed:', error.message);
+    return fallback;
+  }
+}
+
 // Tworzenie nowego planu treningowego
 router.post('/training-plans', authenticateToken, async (req, res) => {
   const { name, description, days, isActive = true } = req.body;
@@ -48,25 +72,27 @@ router.post('/training-plans', authenticateToken, async (req, res) => {
     // Poprawne ID użytkownika dla MySQL
     const mysqlUserId = getMySQLUserId(req.user);
 
-    // MongoDB - transakcja
+    // MongoDB - operacja
     if (databaseType === 'mongo' || databaseType === 'both') {
-      const trainingPlan = new MongoTrainingPlan({
-        userId: req.user.id,
-        name,
-        description,
-        days: days || [],
-        isActive: isActive,
-        dateCreated: new Date(),
-        dateUpdated: new Date()
+      createdPlanMongo = await safeMongoOperation(async () => {
+        const trainingPlan = new MongoTrainingPlan({
+          userId: req.user.id,
+          name,
+          description,
+          days: days || [],
+          isActive: isActive,
+          dateCreated: new Date(),
+          dateUpdated: new Date()
+        });
+        return await trainingPlan.save();
       });
-      createdPlanMongo = await trainingPlan.save();
     }
 
-    // MySQL - transakcja
+    // MySQL - operacja
     if (databaseType === 'mysql' || databaseType === 'both') {
-      try {
+      createdPlanMySQL = await safeMySQLOperation(async () => {
         // Tworzenie planu
-        createdPlanMySQL = await MySQLTrainingPlan.create({
+        const plan = await MySQLTrainingPlan.create({
           userId: mysqlUserId,
           name,
           description,
@@ -75,13 +101,13 @@ router.post('/training-plans', authenticateToken, async (req, res) => {
           dateUpdated: new Date(),
         });
 
-        mysqlPlanId = createdPlanMySQL.id;
+        mysqlPlanId = plan.id;
 
         // Tworzenie dni i ćwiczeń
-        if (days && days.length > 0 && createdPlanMySQL) {
+        if (days && days.length > 0) {
           for (const day of days) {
             const createdDay = await TrainingDay.create({
-              planId: createdPlanMySQL.id,
+              planId: plan.id,
               dayOfWeek: day.dayOfWeek,
               name: day.name,
               order: day.order,
@@ -99,28 +125,24 @@ router.post('/training-plans', authenticateToken, async (req, res) => {
                   restTime: exercise.restTime,
                   order: exercise.order,
                   gifUrl: exercise.gifUrl,
-                  bodyPart: exercise.bodyPart, // Dodano
-                  equipment: exercise.equipment, // Dodano
-                  target: exercise.target, // Dodano
+                  bodyPart: exercise.bodyPart,
+                  equipment: exercise.equipment,
+                  target: exercise.target,
                 });
               }
             }
           }
         }
-      } catch (mysqlError) {
-        console.error("Błąd zapisu w MySQL:", mysqlError);
-        
-        // Rollback MongoDB jeśli zapis w MySQL się nie powiódł
-        if (createdPlanMongo && databaseType === 'both') {
-          await MongoTrainingPlan.findByIdAndDelete(createdPlanMongo._id);
-          createdPlanMongo = null;
-        }
-        throw mysqlError;
-      }
+
+        // Pobieranie utworzonego planu z relacjami
+        return await MySQLTrainingPlan.findByPk(plan.id, {
+          include: [{ model: TrainingDay, include: [TrainingExercise] }]
+        });
+      });
     }
 
     // Odpowiedź
-    if (databaseType === 'both' && createdPlanMongo) {
+    if (databaseType === 'both' && createdPlanMongo && createdPlanMySQL) {
       // Wzbogacamy dane z MongoDB o ID z MySQL
       const responseData = {
         ...createdPlanMongo.toObject(),
@@ -131,10 +153,15 @@ router.post('/training-plans', authenticateToken, async (req, res) => {
         message: 'Plan treningowy został utworzony w obu bazach danych.',
         plan: responseData
       });
-    } else if (createdPlanMongo || createdPlanMySQL) {
+    } else if (createdPlanMongo) {
       res.status(201).json({
-        message: 'Plan treningowy został utworzony.',
-        plan: createdPlanMongo || createdPlanMySQL,
+        message: 'Plan treningowy został utworzony w MongoDB.',
+        plan: createdPlanMongo,
+      });
+    } else if (createdPlanMySQL) {
+      res.status(201).json({
+        message: 'Plan treningowy został utworzony w MySQL.',
+        plan: createdPlanMySQL,
       });
     } else {
       res.status(500).json({ error: 'Nie udało się utworzyć planu treningowego.' });
@@ -149,14 +176,28 @@ router.post('/training-plans', authenticateToken, async (req, res) => {
 router.get('/training-plans', authenticateToken, async (req, res) => {
   try {
     const mysqlUserId = getMySQLUserId(req.user);
+    let mongoPlans = [];
+    let mysqlPlans = [];
 
-    if (databaseType === 'both') {
-      const mongoPlans = await MongoTrainingPlan.find({ userId: req.user.id });
-      const mysqlPlans = await MySQLTrainingPlan.findAll({ 
-        where: { userId: mysqlUserId },
-        include: [{ model: TrainingDay, include: [TrainingExercise] }]
-      });
+    // Pobierz dane z MongoDB
+    if (databaseType === 'mongo' || databaseType === 'both') {
+      mongoPlans = await safeMongoOperation(async () => {
+        return await MongoTrainingPlan.find({ userId: req.user.id });
+      }, []);
+    }
 
+    // Pobierz dane z MySQL
+    if (databaseType === 'mysql' || databaseType === 'both') {
+      mysqlPlans = await safeMySQLOperation(async () => {
+        return await MySQLTrainingPlan.findAll({ 
+          where: { userId: mysqlUserId },
+          include: [{ model: TrainingDay, include: [TrainingExercise] }]
+        });
+      }, []);
+    }
+
+    if (databaseType === 'both' && mongoPlans.length > 0 && mysqlPlans.length > 0) {
+      // Próba połączenia danych z obu baz
       const enrichedPlans = mongoPlans.map(mongoPlan => {
         const matchingMySQLPlan = mysqlPlans.find(mysqlPlan => mysqlPlan.name === mongoPlan.name);
         return {
@@ -164,17 +205,11 @@ router.get('/training-plans', authenticateToken, async (req, res) => {
           mysqlId: matchingMySQLPlan ? matchingMySQLPlan.id : null,
         };
       });
-
       return res.status(200).json(enrichedPlans);
-    } else if (databaseType === 'mongo') {
-      const plans = await MongoTrainingPlan.find({ userId: req.user.id });
-      return res.status(200).json(plans);
-    } else if (databaseType === 'mysql') {
-      const plans = await MySQLTrainingPlan.findAll({ 
-        where: { userId: mysqlUserId },
-        include: [{ model: TrainingDay, include: [TrainingExercise] }]
-      });
-      return res.status(200).json(plans);
+    } else if (mongoPlans.length > 0) {
+      return res.status(200).json(mongoPlans);
+    } else if (mysqlPlans.length > 0) {
+      return res.status(200).json(mysqlPlans);
     }
 
     res.status(200).json([]);
@@ -188,22 +223,44 @@ router.get('/training-plans', authenticateToken, async (req, res) => {
 router.get('/training-plans/:id', authenticateToken, async (req, res) => {
   try {
     const planId = req.params.id;
+    let mongoPlan = null;
+    let mysqlPlan = null;
 
-    if (databaseType === 'both') {
-      if (/^[0-9a-fA-F]{24}$/.test(planId)) {
-        const mongoPlan = await MongoTrainingPlan.findById(planId);
-        if (mongoPlan) {
-          const mysqlPlans = await MySQLTrainingPlan.findAll({
+    // Sprawdź, czy planId to ObjectId (MongoDB)
+    if (/^[0-9a-fA-F]{24}$/.test(planId) && (databaseType === 'mongo' || databaseType === 'both')) {
+      mongoPlan = await safeMongoOperation(async () => {
+        return await MongoTrainingPlan.findById(planId);
+      });
+
+      if (mongoPlan && databaseType === 'both') {
+        // Próba znalezienia odpowiadającego planu w MySQL
+        const matchingMysqlPlans = await safeMySQLOperation(async () => {
+          return await MySQLTrainingPlan.findAll({
             where: { name: mongoPlan.name },
             include: [{ model: TrainingDay, include: [TrainingExercise] }],
           });
+        }, []);
 
-          const mysqlPlan = mysqlPlans.length > 0 ? mysqlPlans[0] : null;
-          return res.status(200).json({
-            ...mongoPlan.toObject(),
-            mysqlId: mysqlPlan ? mysqlPlan.id : null,
-          });
-        }
+        const mysqlPlan = matchingMysqlPlans && matchingMysqlPlans.length > 0 ? matchingMysqlPlans[0] : null;
+        
+        return res.status(200).json({
+          ...mongoPlan.toObject(),
+          mysqlId: mysqlPlan ? mysqlPlan.id : null,
+        });
+      } else if (mongoPlan) {
+        return res.status(200).json(mongoPlan);
+      }
+    } 
+    // Sprawdź, czy planId to liczba (MySQL)
+    else if (!isNaN(parseInt(planId, 10)) && (databaseType === 'mysql' || databaseType === 'both')) {
+      mysqlPlan = await safeMySQLOperation(async () => {
+        return await MySQLTrainingPlan.findByPk(parseInt(planId, 10), {
+          include: [{ model: TrainingDay, include: [TrainingExercise] }]
+        });
+      });
+
+      if (mysqlPlan) {
+        return res.status(200).json(mysqlPlan);
       }
     }
 
@@ -225,26 +282,42 @@ router.put('/training-plans/:id', authenticateToken, async (req, res) => {
     let mongoId = null;
     let mysqlId = null;
 
-    // Identyfikacja ID dla obu baz
+    // Określ odpowiednie ID dla obu baz
     if (/^[0-9a-fA-F]{24}$/.test(planId)) {
+      // Plan ID to MongoDB ObjectID
       mongoId = planId;
-      // Próba znalezienia odpowiadającego rekordu w MySQL
-      const mongoPlan = await MongoTrainingPlan.findById(mongoId);
-      if (mongoPlan) {
-        const mysqlPlans = await MySQLTrainingPlan.findAll({
-          where: { name: mongoPlan.name }
+      
+      // Tylko jeśli używamy obu baz danych, spróbuj znaleźć odpowiadający rekord w MySQL
+      if (databaseType === 'both') {
+        const mongoPlan = await safeMongoOperation(async () => {
+          return await MongoTrainingPlan.findById(mongoId);
         });
-        if (mysqlPlans && mysqlPlans.length > 0) {
-          mysqlId = mysqlPlans[0].id;
+        
+        if (mongoPlan) {
+          const mysqlPlans = await safeMySQLOperation(async () => {
+            return await MySQLTrainingPlan.findAll({ where: { name: mongoPlan.name } });
+          }, []);
+          
+          if (mysqlPlans && mysqlPlans.length > 0) {
+            mysqlId = mysqlPlans[0].id;
+          }
         }
       }
     } else {
+      // Plan ID to prawdopodobnie MySQL ID
       mysqlId = parseInt(planId, 10);
-      if (!isNaN(mysqlId)) {
-        // Próba znalezienia odpowiadającego rekordu w MongoDB
-        const mysqlPlan = await MySQLTrainingPlan.findByPk(mysqlId);
+      
+      // Tylko jeśli używamy obu baz danych, spróbuj znaleźć odpowiadający rekord w MongoDB
+      if (databaseType === 'both' && !isNaN(mysqlId)) {
+        const mysqlPlan = await safeMySQLOperation(async () => {
+          return await MySQLTrainingPlan.findByPk(mysqlId);
+        });
+        
         if (mysqlPlan) {
-          const mongoPlans = await MongoTrainingPlan.find({ name: mysqlPlan.name });
+          const mongoPlans = await safeMongoOperation(async () => {
+            return await MongoTrainingPlan.find({ name: mysqlPlan.name });
+          }, []);
+          
           if (mongoPlans && mongoPlans.length > 0) {
             mongoId = mongoPlans[0]._id;
           }
@@ -252,87 +325,88 @@ router.put('/training-plans/:id', authenticateToken, async (req, res) => {
       }
     }
 
-    // MongoDB - aktualizacja planu
+    // MongoDB - aktualizacja planu jeśli dostępny
     if ((databaseType === 'mongo' || databaseType === 'both') && mongoId) {
-      updatedMongo = await MongoTrainingPlan.findByIdAndUpdate(
-        mongoId,
-        { name, description, isActive, days, dateUpdated: new Date() },
-        { new: true }
-      );
+      updatedMongo = await safeMongoOperation(async () => {
+        return await MongoTrainingPlan.findByIdAndUpdate(
+          mongoId,
+          { name, description, isActive, days, dateUpdated: new Date() },
+          { new: true }
+        );
+      });
     }
 
-    // MySQL - aktualizacja planu i powiązanych danych
-    if ((databaseType === 'mysql' || databaseType === 'both') && mysqlId) {
-      // 1. Aktualizacja głównego rekordu planu
-      await MySQLTrainingPlan.update(
-        { name, description, isActive, dateUpdated: new Date() },
-        { where: { id: mysqlId } }
-      );
-      
-      // 2. Jeśli przekazano dni, aktualizuj strukturę dni i ćwiczeń
-      if (days && Array.isArray(days)) {
-        // Usuń istniejące dni i ćwiczenia (kaskadowo)
-        await TrainingDay.destroy({ where: { planId: mysqlId } });
+    // MySQL - aktualizacja planu i powiązanych danych jeśli dostępny
+    if ((databaseType === 'mysql' || databaseType === 'both') && mysqlId && !isNaN(mysqlId)) {
+      updatedMySQL = await safeMySQLOperation(async () => {
+        // 1. Aktualizacja głównego rekordu planu
+        await MySQLTrainingPlan.update(
+          { name, description, isActive, dateUpdated: new Date() },
+          { where: { id: mysqlId } }
+        );
         
-        // Dodaj zaktualizowane dni i ćwiczenia
-        for (const day of days) {
-          const createdDay = await TrainingDay.create({
-            planId: mysqlId,
-            dayOfWeek: day.dayOfWeek,
-            name: day.name,
-            order: day.order
-          });
+        // 2. Jeśli przekazano dni, aktualizuj strukturę dni i ćwiczeń
+        if (days && Array.isArray(days)) {
+          // Usuń istniejące dni i ćwiczenia (kaskadowo)
+          await TrainingDay.destroy({ where: { planId: mysqlId } });
+          
+          // Dodaj zaktualizowane dni i ćwiczenia
+          for (const day of days) {
+            const createdDay = await TrainingDay.create({
+              planId: mysqlId,
+              dayOfWeek: day.dayOfWeek,
+              name: day.name,
+              order: day.order
+            });
 
-          if (day.exercises && Array.isArray(day.exercises)) {
-            for (const exercise of day.exercises) {
-              await TrainingExercise.create({
-                dayId: createdDay.id,
-                exerciseId: exercise.exerciseId,
-                exerciseName: exercise.exerciseName,
-                sets: exercise.sets || 0,
-                reps: exercise.reps || 0,
-                weight: exercise.weight,
-                restTime: exercise.restTime,
-                order: exercise.order,
-                gifUrl: exercise.gifUrl,
-                bodyPart: exercise.bodyPart, // Dodano
-                equipment: exercise.equipment, // Dodano
-                target: exercise.target, // Dodano
-              });
+            if (day.exercises && Array.isArray(day.exercises)) {
+              for (const exercise of day.exercises) {
+                await TrainingExercise.create({
+                  dayId: createdDay.id,
+                  exerciseId: exercise.exerciseId,
+                  exerciseName: exercise.exerciseName,
+                  sets: exercise.sets || 0,
+                  reps: exercise.reps || 0,
+                  weight: exercise.weight,
+                  restTime: exercise.restTime,
+                  order: exercise.order,
+                  gifUrl: exercise.gifUrl,
+                  bodyPart: exercise.bodyPart,
+                  equipment: exercise.equipment,
+                  target: exercise.target,
+                });
+              }
             }
           }
         }
-      }
-      
-      // Pobierz zaktualizowany rekord z MySQL
-      updatedMySQL = await MySQLTrainingPlan.findByPk(mysqlId, {
-        include: [{ model: TrainingDay, include: [TrainingExercise] }],
+        
+        // Pobierz zaktualizowany rekord z MySQL
+        return await MySQLTrainingPlan.findByPk(mysqlId, {
+          include: [{ model: TrainingDay, include: [TrainingExercise] }],
+        });
       });
     }
 
     // Obsługa odpowiedzi
-    if (databaseType === 'both') {
-      if (updatedMongo) {
-        // Wzbogać dane MongoDB o ID MySQL
-        const responseData = {
-          ...updatedMongo.toObject(),
-          mysqlId: mysqlId
-        };
-        return res.status(200).json({
-          message: 'Plan treningowy został zaktualizowany w obu bazach danych.',
-          plan: responseData
-        });
-      } else if (updatedMySQL) {
-        // Jeśli z jakiegoś powodu nie udało się zaktualizować MongoDB
-        return res.status(200).json({
-          message: 'Plan treningowy został zaktualizowany tylko w MySQL.',
-          plan: updatedMySQL
-        });
-      }
-    } else if (updatedMongo || updatedMySQL) {
+    if (databaseType === 'both' && updatedMongo && updatedMySQL) {
+      // Wzbogać dane MongoDB o ID MySQL
+      const responseData = {
+        ...updatedMongo.toObject(),
+        mysqlId: mysqlId
+      };
       return res.status(200).json({
-        message: 'Plan treningowy został zaktualizowany.',
-        plan: updatedMongo || updatedMySQL,
+        message: 'Plan treningowy został zaktualizowany w obu bazach danych.',
+        plan: responseData
+      });
+    } else if (updatedMongo) {
+      return res.status(200).json({
+        message: 'Plan treningowy został zaktualizowany w MongoDB.',
+        plan: updatedMongo
+      });
+    } else if (updatedMySQL) {
+      return res.status(200).json({
+        message: 'Plan treningowy został zaktualizowany w MySQL.',
+        plan: updatedMySQL
       });
     }
     
@@ -354,26 +428,42 @@ router.delete('/training-plans/:id', authenticateToken, async (req, res) => {
     let mongoId = null;
     let mysqlId = null;
 
-    // Identyfikacja ID dla obu baz
+    // Identyfikacja ID dla odpowiednich baz
     if (/^[0-9a-fA-F]{24}$/.test(planId)) {
+      // MongoDB ObjectID
       mongoId = planId;
-      // Próba znalezienia odpowiadającego rekordu w MySQL
-      const mongoPlan = await MongoTrainingPlan.findById(mongoId);
-      if (mongoPlan) {
-        const mysqlPlans = await MySQLTrainingPlan.findAll({
-          where: { name: mongoPlan.name }
+      
+      // Spróbuj znaleźć odpowiadający rekord w MySQL tylko jeśli używamy obu baz
+      if (databaseType === 'both') {
+        const mongoPlan = await safeMongoOperation(async () => {
+          return await MongoTrainingPlan.findById(mongoId);
         });
-        if (mysqlPlans && mysqlPlans.length > 0) {
-          mysqlId = mysqlPlans[0].id;
+        
+        if (mongoPlan) {
+          const mysqlPlans = await safeMySQLOperation(async () => {
+            return await MySQLTrainingPlan.findAll({ where: { name: mongoPlan.name } });
+          }, []);
+          
+          if (mysqlPlans && mysqlPlans.length > 0) {
+            mysqlId = mysqlPlans[0].id;
+          }
         }
       }
     } else {
+      // MySQL ID
       mysqlId = parseInt(planId, 10);
-      if (!isNaN(mysqlId)) {
-        // Próba znalezienia odpowiadającego rekordu w MongoDB
-        const mysqlPlan = await MySQLTrainingPlan.findByPk(mysqlId);
+      
+      // Spróbuj znaleźć odpowiadający rekord w MongoDB tylko jeśli używamy obu baz
+      if (databaseType === 'both' && !isNaN(mysqlId)) {
+        const mysqlPlan = await safeMySQLOperation(async () => {
+          return await MySQLTrainingPlan.findByPk(mysqlId);
+        });
+        
         if (mysqlPlan) {
-          const mongoPlans = await MongoTrainingPlan.find({ name: mysqlPlan.name });
+          const mongoPlans = await safeMongoOperation(async () => {
+            return await MongoTrainingPlan.find({ name: mysqlPlan.name });
+          }, []);
+          
           if (mongoPlans && mongoPlans.length > 0) {
             mongoId = mongoPlans[0]._id;
           }
@@ -383,39 +473,37 @@ router.delete('/training-plans/:id', authenticateToken, async (req, res) => {
 
     // MongoDB - usunięcie planu
     if ((databaseType === 'mongo' || databaseType === 'both') && mongoId) {
-      const deletedPlan = await MongoTrainingPlan.findByIdAndDelete(mongoId);
+      const deletedPlan = await safeMongoOperation(async () => {
+        return await MongoTrainingPlan.findByIdAndDelete(mongoId);
+      });
       isMongoDeleted = !!deletedPlan;
     }
 
     // MySQL - usunięcie planu (kaskadowo usunie też dni i ćwiczenia)
-    if ((databaseType === 'mysql' || databaseType === 'both') && mysqlId) {
-      const deletedRows = await MySQLTrainingPlan.destroy({ where: { id: mysqlId } });
+    if ((databaseType === 'mysql' || databaseType === 'both') && mysqlId && !isNaN(mysqlId)) {
+      const deletedRows = await safeMySQLOperation(async () => {
+        return await MySQLTrainingPlan.destroy({ where: { id: mysqlId } });
+      }, 0);
       isMySQLDeleted = deletedRows > 0;
     }
 
     // Obsługa odpowiedzi
-    if (databaseType === 'both') {
-      if (isMongoDeleted && isMySQLDeleted) {
-        return res.status(200).json({ 
-          message: 'Plan treningowy został usunięty z obu baz danych.' 
-        });
-      } else if (isMongoDeleted) {
-        return res.status(200).json({ 
-          message: 'Plan treningowy został usunięty tylko z MongoDB.' 
-        });
-      } else if (isMySQLDeleted) {
-        return res.status(200).json({ 
-          message: 'Plan treningowy został usunięty tylko z MySQL.' 
-        });
-      }
-    } else if (isMongoDeleted || isMySQLDeleted) {
+    if (databaseType === 'both' && isMongoDeleted && isMySQLDeleted) {
       return res.status(200).json({ 
-        message: 'Plan treningowy został usunięty.' 
+        message: 'Plan treningowy został usunięty z obu baz danych.' 
       });
+    } else if (isMongoDeleted) {
+      return res.status(200).json({ 
+        message: 'Plan treningowy został usunięty z MongoDB.' 
+      });
+    } else if (isMySQLDeleted) {
+      return res.status(200).json({ 
+        message: 'Plan treningowy został usunięty z MySQL.' 
+      });
+    } else {
+      // Jeśli nie udało się usunąć żadnego rekordu
+      res.status(404).json({ error: 'Nie znaleziono planu treningowego do usunięcia.' });
     }
-
-    // Jeśli nie udało się usunąć żadnego rekordu
-    res.status(404).json({ error: 'Nie znaleziono planu treningowego do usunięcia.' });
   } catch (error) {
     console.error('Błąd usuwania planu treningowego:', error);
     res.status(500).json({ error: 'Błąd usuwania planu treningowego.' });

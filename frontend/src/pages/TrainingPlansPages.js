@@ -9,7 +9,7 @@ import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import BackgroundIcons from '../components/BackgroundIcons';
 import Navbar from '../components/Navbar';
 import TrainingPlanForm from '../components/TrainingPlanForm';
-import TrainingPlanDetails from '../components/TrainingPlanDetails'; // Nowy komponent do przeglądania
+import TrainingPlanDetails from '../components/TrainingPlanDetails';
 import api from '../services/api';
 
 const TrainingPlansPage = () => {
@@ -21,6 +21,14 @@ const TrainingPlansPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [planToDelete, setPlanToDelete] = useState(null);
   const [viewMode, setViewMode] = useState('edit'); // 'edit' lub 'view'
+
+  // Uniwersalna funkcja do pobierania ID planu (działa z obiema bazami)
+  const getPlanId = (plan) => {
+    if (!plan) return null;
+    
+    // Próbujemy znaleźć ID w różnych możliwych formatach
+    return plan.mysqlId || plan._id || plan.id || null;
+  };
 
   // Fetch all training plans
   const fetchPlans = async () => {
@@ -65,28 +73,28 @@ const TrainingPlansPage = () => {
     setPlanToDelete(plan);
     setDeleteDialogOpen(true);
   };
-// Handle actual deletion
-const handleDeletePlan = async () => {
-  try {
-    // Sprawdź, które ID jest dostępne - MySQL ID lub MongoDB ID
-    const planId = planToDelete.mysqlId || planToDelete._id || planToDelete.id;
 
-    // Jeśli żadne ID nie jest dostępne, zgłoś błąd
-    if (!planId) {
-      throw new Error('Nie można usunąć planu. Brak ID planu.');
+  // Handle actual deletion
+  const handleDeletePlan = async () => {
+    try {
+      const planId = getPlanId(planToDelete);
+
+      // Jeśli żadne ID nie jest dostępne, zgłoś błąd
+      if (!planId) {
+        throw new Error('Nie można usunąć planu. Brak ID planu.');
+      }
+
+      // Wywołanie API z odpowiednim ID
+      await api.delete(`/training-plans/${planId}`);
+
+      // Zamknięcie okna dialogowego i odświeżenie listy planów
+      setDeleteDialogOpen(false);
+      setPlanToDelete(null);
+      await fetchPlans();
+    } catch (error) {
+      console.error('Błąd podczas usuwania planu treningowego:', error);
     }
-
-    // Wywołanie API z odpowiednim ID
-    await api.delete(`/training-plans/${planId}`);
-
-    // Zamknięcie okna dialogowego i odświeżenie listy planów
-    setDeleteDialogOpen(false);
-    setPlanToDelete(null);
-    await fetchPlans();
-  } catch (error) {
-    console.error('Błąd podczas usuwania planu treningowego:', error);
-  }
-};
+  };
 
   // Handle form close
   const handleFormClose = (refreshNeeded = false) => {
@@ -111,29 +119,23 @@ const handleDeletePlan = async () => {
         plans
           .filter(p => p.isActive)
           .map(async (p) => {
-            // Używamy odpowiedniego ID dla każdej bazy danych
-            const planId = p._id || p.id;
-            
-            // Jeśli plan ma przypisane ID MySQL, używamy go, w przeciwnym razie używamy ID MongoDB
-            if (p.mysqlId) {
-              await api.put(`/training-plans/${p.mysqlId}`, { ...p, isActive: false });
-            } else {
-              await api.put(`/training-plans/${planId}`, { ...p, isActive: false });
+            const id = getPlanId(p);
+            if (id) {
+              await api.put(`/training-plans/${id}`, { ...p, isActive: false });
             }
           })
       );
       
       // Następnie aktywujemy wybrany plan
-      // Jeśli plan ma przypisane ID MySQL, używamy go, w przeciwnym razie używamy ID MongoDB
-      if (plan.mysqlId) {
-        await api.put(`/training-plans/${plan.mysqlId}`, { ...plan, isActive: true });
-      } else {
-        const planId = plan._id || plan.id;
+      const planId = getPlanId(plan);
+      if (planId) {
         await api.put(`/training-plans/${planId}`, { ...plan, isActive: true });
+        
+        // Odświeżamy listę planów
+        fetchPlans();
+      } else {
+        console.error('Nie można aktywować planu. Brak ID planu.');
       }
-      
-      // Odświeżamy listę planów
-      fetchPlans();
     } catch (error) {
       console.error('Błąd podczas aktywacji planu treningowego:', error);
     }
@@ -237,7 +239,7 @@ const handleDeletePlan = async () => {
         ) : (
           <Grid container spacing={3}>
             {plans.map((plan, index) => (
-              <Grid item xs={12} sm={6} md={4} key={plan._id || plan.id}>
+              <Grid item xs={12} sm={6} md={4} key={getPlanId(plan) || index}>
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -313,7 +315,7 @@ const handleDeletePlan = async () => {
                         Dni treningowe: {plan.days?.length || 0}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Utworzono: {new Date(plan.dateCreated).toLocaleDateString()}
+                        Utworzono: {new Date(plan.dateCreated || Date.now()).toLocaleDateString()}
                       </Typography>
                     </CardContent>
                     <CardActions sx={{ justifyContent: 'space-between', p: 2 }}>
