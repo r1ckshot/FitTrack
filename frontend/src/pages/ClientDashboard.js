@@ -121,7 +121,7 @@ const ClientDashboard = () => {
                   boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.2)',
                   textAlign: 'center',
                 }}
-                onClick={() => navigate('/diet')}
+                onClick={() => navigate('/diets')}
               >
                 <CardActionArea sx={{ padding: '20px' }}>
                   <RestaurantIcon sx={{ fontSize: '50px', color: '#4CAF50', mb: 2 }} />

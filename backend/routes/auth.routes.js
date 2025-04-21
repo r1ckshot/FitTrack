@@ -27,7 +27,7 @@ router.post('/auth/register', async (req, res) => {
     if (process.env.DATABASE_TYPE === 'mongo' || process.env.DATABASE_TYPE === 'both') {
       const existingMongoUser = await MongoUser.findOne({ $or: [{ username }, { email }] });
       if (existingMongoUser) {
-        return res.status(400).json({ error: 'Użytkownik już istnieje w MongoDB.' });
+        return res.status(400).json({ error: 'Użytkownik już istnieje.' });
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -47,7 +47,7 @@ router.post('/auth/register', async (req, res) => {
         where: { [Op.or]: [{ username }, { email }] }, // Użycie Op.or
       });
       if (existingMySQLUser) {
-        return res.status(400).json({ error: 'Użytkownik już istnieje w MySQL.' });
+        return res.status(400).json({ error: 'Użytkownik już istnieje.' });
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
