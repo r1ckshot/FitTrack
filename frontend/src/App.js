@@ -9,6 +9,7 @@ import RegisterPage from './pages/RegisterPage';
 import { getUserRole } from './utils/auth';
 import ProgressPage from './pages/ProgressPage';
 import TrainingPlansPage from './pages/TrainingPlansPages';
+import DietPlansPage from './pages/DietPlansPage';
 
 const App = () => {
   const [role, setRole] = useState(null); // Rola użytkownika
@@ -60,6 +61,9 @@ const App = () => {
 
         {/* Strona planów treningowych */}
         <Route path="/exercises" element={<TrainingPlansPage />} />
+
+        {/* Strona planów deietycznych */}
+        <Route path="/diets" element={<DietPlansPage />} />
 
         {/* Obsługa nieznanych tras */}
         <Route path="*" element={<Navigate to="/" replace />} />
