@@ -24,6 +24,9 @@ docker-compose logs -f backend 		# Sprawdzenie logów backendu
 docker-compose build 	# tylko jeżeli zmienił się Dockerfile lub docker-compose.yml
 
 
+docker-compose down --rmi all	#usunięcie obrazów dla wszystkiego
+
+
 MongoDB:
 
 Zatrzymać bazę mongod, najpierw wystartować Docker a po nim MongoDB Compass.
