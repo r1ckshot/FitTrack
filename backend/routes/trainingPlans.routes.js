@@ -99,6 +99,9 @@ router.post('/training-plans', authenticateToken, async (req, res) => {
                   restTime: exercise.restTime,
                   order: exercise.order,
                   gifUrl: exercise.gifUrl,
+                  bodyPart: exercise.bodyPart, // Dodano
+                  equipment: exercise.equipment, // Dodano
+                  target: exercise.target, // Dodano
                 });
               }
             }
@@ -291,7 +294,10 @@ router.put('/training-plans/:id', authenticateToken, async (req, res) => {
                 weight: exercise.weight,
                 restTime: exercise.restTime,
                 order: exercise.order,
-                gifUrl: exercise.gifUrl
+                gifUrl: exercise.gifUrl,
+                bodyPart: exercise.bodyPart, // Dodano
+                equipment: exercise.equipment, // Dodano
+                target: exercise.target, // Dodano
               });
             }
           }
