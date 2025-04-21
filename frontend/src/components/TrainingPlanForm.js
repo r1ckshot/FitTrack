@@ -85,7 +85,7 @@ const TrainingPlanForm = ({ plan, onClose }) => {
     preparedFormData.days.forEach(day => {
       if (day.exercises && day.exercises.length > 0) {
         day.exercises = day.exercises.map((exercise, index) => {
-          // Wybierz tylko te pola, które są wymagane przez backend
+          // Dodaj brakujące pola: bodyPart, equipment, target
           return {
             exerciseId: exercise.exerciseId,
             exerciseName: exercise.exerciseName,
@@ -94,7 +94,10 @@ const TrainingPlanForm = ({ plan, onClose }) => {
             weight: exercise.weight || 0,
             restTime: exercise.restTime || null,
             order: exercise.order || (index + 1),
-            gifUrl: exercise.gifUrl
+            gifUrl: exercise.gifUrl,
+            bodyPart: exercise.bodyPart || '', // Dodano
+            equipment: exercise.equipment || '', // Dodano
+            target: exercise.target || '' // Dodano
           };
         });
       }

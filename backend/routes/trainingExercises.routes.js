@@ -11,7 +11,7 @@ const databaseType = process.env.DATABASE_TYPE || 'both';
 
 // Dodanie nowego ćwiczenia do dnia treningowego
 router.post('/training-days/:dayId/exercises', authenticateToken, async (req, res) => {
-  const { exerciseId, exerciseName, sets, reps, weight, restTime, order, gifUrl } = req.body;
+  const { exerciseId, exerciseName, sets, reps, weight, restTime, order, gifUrl, bodyPart, equipment, target } = req.body;
   const { mongoDayId } = req.query; // Dodanie opcjonalnego ID MongoDB
 
   try {
@@ -28,7 +28,7 @@ router.post('/training-days/:dayId/exercises', authenticateToken, async (req, re
 
       const day = plan.days.id(mongoIdToUse);
       if (day) {
-        const newExercise = { exerciseId, exerciseName, sets, reps, weight, restTime, order, gifUrl };
+        const newExercise = { exerciseId, exerciseName, sets, reps, weight, restTime, order, gifUrl, bodyPart, equipment, target };
         day.exercises.push(newExercise);
         await plan.save();
         
@@ -41,11 +41,10 @@ router.post('/training-days/:dayId/exercises', authenticateToken, async (req, re
     // MySQL
     if (databaseType === 'mysql' || databaseType === 'both') {
       const mysqlDayId = parseInt(req.params.dayId, 10);
-      // Sprawdź czy mysqlDayId jest prawidłowym ID
       if (!isNaN(mysqlDayId)) {
         const day = await MySQLTrainingDay.findByPk(mysqlDayId);
         if (!day) return res.status(404).json({ error: 'Dzień treningowy nie został znaleziony w MySQL.' });
-        
+
         createdExerciseMySQL = await MySQLTrainingExercise.create({
           dayId: mysqlDayId,
           exerciseId,
@@ -56,8 +55,11 @@ router.post('/training-days/:dayId/exercises', authenticateToken, async (req, re
           restTime,
           order,
           gifUrl,
+          bodyPart,
+          equipment,
+          target,
         });
-        
+
         newExerciseMySQLId = createdExerciseMySQL.id;
       }
     }
@@ -75,7 +77,10 @@ router.post('/training-days/:dayId/exercises', authenticateToken, async (req, re
           weight,
           restTime,
           order,
-          gifUrl
+          gifUrl,
+          bodyPart,
+          equipment,
+          target,
         }
       };
       
@@ -91,7 +96,7 @@ router.post('/training-days/:dayId/exercises', authenticateToken, async (req, re
 
 // Aktualizacja ćwiczenia
 router.put('/training-exercises/:id', authenticateToken, async (req, res) => {
-  const { exerciseId, exerciseName, sets, reps, weight, restTime, order, gifUrl, mongoId, mysqlId } = req.body;
+  const { exerciseId, exerciseName, sets, reps, weight, restTime, order, gifUrl, bodyPart, equipment, target, mongoId, mysqlId } = req.body;
   const exerciseParamId = req.params.id;
 
   try {
@@ -105,7 +110,7 @@ router.put('/training-exercises/:id', authenticateToken, async (req, res) => {
       const plan = await MongoTrainingPlan.findOne({ 'days.exercises._id': mongoIdToUse });
       if (plan) {
         let exerciseFound = false;
-        
+
         // Znajdź ćwiczenie w zagnieżdżonych dniach
         for (const day of plan.days) {
           const exercise = day.exercises.id(mongoIdToUse);
@@ -118,13 +123,16 @@ router.put('/training-exercises/:id', authenticateToken, async (req, res) => {
             if (restTime !== undefined) exercise.restTime = restTime;
             if (order !== undefined) exercise.order = order;
             if (gifUrl !== undefined) exercise.gifUrl = gifUrl;
-            
+            if (bodyPart !== undefined) exercise.bodyPart = bodyPart;
+            if (equipment !== undefined) exercise.equipment = equipment;
+            if (target !== undefined) exercise.target = target;
+
             exerciseFound = true;
             updatedExerciseMongo = exercise;
             break;
           }
         }
-        
+
         if (exerciseFound) {
           await plan.save();
           updateSuccess = true;
@@ -135,7 +143,7 @@ router.put('/training-exercises/:id', authenticateToken, async (req, res) => {
     // MySQL
     if ((databaseType === 'mysql' || databaseType === 'both') && (mysqlId || !isNaN(parseInt(exerciseParamId, 10)))) {
       const mysqlIdToUse = mysqlId || parseInt(exerciseParamId, 10);
-      
+
       const updateData = {};
       if (exerciseId) updateData.exerciseId = exerciseId;
       if (exerciseName) updateData.exerciseName = exerciseName;
@@ -145,12 +153,12 @@ router.put('/training-exercises/:id', authenticateToken, async (req, res) => {
       if (restTime !== undefined) updateData.restTime = restTime;
       if (order !== undefined) updateData.order = order;
       if (gifUrl !== undefined) updateData.gifUrl = gifUrl;
-      
-      const [updatedRows] = await MySQLTrainingExercise.update(
-        updateData,
-        { where: { id: mysqlIdToUse } }
-      );
-      
+      if (bodyPart !== undefined) updateData.bodyPart = bodyPart;
+      if (equipment !== undefined) updateData.equipment = equipment;
+      if (target !== undefined) updateData.target = target;
+
+      const [updatedRows] = await MySQLTrainingExercise.update(updateData, { where: { id: mysqlIdToUse } });
+
       if (updatedRows > 0) {
         updatedExerciseMySQL = await MySQLTrainingExercise.findByPk(mysqlIdToUse);
         updateSuccess = true;
@@ -170,10 +178,13 @@ router.put('/training-exercises/:id', authenticateToken, async (req, res) => {
           weight: updatedExerciseMongo?.weight || updatedExerciseMySQL?.weight,
           restTime: updatedExerciseMongo?.restTime || updatedExerciseMySQL?.restTime,
           order: updatedExerciseMongo?.order || updatedExerciseMySQL?.order,
-          gifUrl: updatedExerciseMongo?.gifUrl || updatedExerciseMySQL?.gifUrl
+          gifUrl: updatedExerciseMongo?.gifUrl || updatedExerciseMySQL?.gifUrl,
+          bodyPart: updatedExerciseMongo?.bodyPart || updatedExerciseMySQL?.bodyPart,
+          equipment: updatedExerciseMongo?.equipment || updatedExerciseMySQL?.equipment,
+          target: updatedExerciseMongo?.target || updatedExerciseMySQL?.target,
         }
       };
-      
+
       res.status(200).json(responseData);
     } else {
       res.status(404).json({ error: 'Nie znaleziono ćwiczenia do aktualizacji.' });

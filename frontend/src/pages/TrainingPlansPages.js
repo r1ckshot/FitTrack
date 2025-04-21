@@ -65,22 +65,28 @@ const TrainingPlansPage = () => {
     setPlanToDelete(plan);
     setDeleteDialogOpen(true);
   };
+// Handle actual deletion
+const handleDeletePlan = async () => {
+  try {
+    // Sprawdź, które ID jest dostępne - MySQL ID lub MongoDB ID
+    const planId = planToDelete.mysqlId || planToDelete._id || planToDelete.id;
 
-  // Handle actual deletion
-  const handleDeletePlan = async () => {
-    try {
-      const { _id, mysqlId } = planToDelete;
-
-      await api.delete(`/training-plans/${planToDelete._id || planToDelete.mysqlId}`);
-
-      // Zamykamy okno dialogowe i odświeżamy listę planów
-      setDeleteDialogOpen(false);
-      setPlanToDelete(null);
-      await fetchPlans(); // Oczekujemy na zakończenie fetchPlans
-    } catch (error) {
-      console.error('Błąd podczas usuwania planu treningowego:', error);
+    // Jeśli żadne ID nie jest dostępne, zgłoś błąd
+    if (!planId) {
+      throw new Error('Nie można usunąć planu. Brak ID planu.');
     }
-  };
+
+    // Wywołanie API z odpowiednim ID
+    await api.delete(`/training-plans/${planId}`);
+
+    // Zamknięcie okna dialogowego i odświeżenie listy planów
+    setDeleteDialogOpen(false);
+    setPlanToDelete(null);
+    await fetchPlans();
+  } catch (error) {
+    console.error('Błąd podczas usuwania planu treningowego:', error);
+  }
+};
 
   // Handle form close
   const handleFormClose = (refreshNeeded = false) => {
