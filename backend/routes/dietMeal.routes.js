@@ -11,7 +11,7 @@ const databaseType = process.env.DATABASE_TYPE || 'both';
 
 // Dodanie nowego posiłku do dnia diety
 router.post('/diet-days/:dayId/meals', authenticateToken, async (req, res) => {
-  const { recipeId, title, calories, protein, carbs, fat, image } = req.body;
+  const { recipeId, title, calories, protein, carbs, fat, image, recipeUrl } = req.body; // Dodano recipeUrl
   const { mongoDayId } = req.query; // Dodanie opcjonalnego ID MongoDB
 
   try {
@@ -28,7 +28,7 @@ router.post('/diet-days/:dayId/meals', authenticateToken, async (req, res) => {
 
       const day = plan.days.id(mongoIdToUse);
       if (day) {
-        const newMeal = { recipeId, title, calories, protein, carbs, fat, image };
+        const newMeal = { recipeId, title, calories, protein, carbs, fat, image, recipeUrl }; // Uwzględnij recipeUrl
         day.meals.push(newMeal);
         await plan.save();
 
@@ -54,6 +54,7 @@ router.post('/diet-days/:dayId/meals', authenticateToken, async (req, res) => {
           carbs,
           fat,
           image,
+          recipeUrl, // Uwzględnij recipeUrl
         });
 
         newMealMySQLId = createdMealMySQL.id;
@@ -73,6 +74,7 @@ router.post('/diet-days/:dayId/meals', authenticateToken, async (req, res) => {
           carbs,
           fat,
           image,
+          recipeUrl, // Uwzględnij recipeUrl
         },
       };
 
@@ -88,7 +90,7 @@ router.post('/diet-days/:dayId/meals', authenticateToken, async (req, res) => {
 
 // Aktualizacja posiłku
 router.put('/meals/:id', authenticateToken, async (req, res) => {
-  const { recipeId, title, calories, protein, carbs, fat, image, mongoId, mysqlId } = req.body;
+  const { recipeId, title, calories, protein, carbs, fat, image, recipeUrl, mongoId, mysqlId } = req.body; // Dodano recipeUrl
   const mealParamId = req.params.id;
 
   try {
@@ -114,6 +116,7 @@ router.put('/meals/:id', authenticateToken, async (req, res) => {
             if (carbs !== undefined) meal.carbs = carbs;
             if (fat !== undefined) meal.fat = fat;
             if (image !== undefined) meal.image = image;
+            if (recipeUrl !== undefined) meal.recipeUrl = recipeUrl; // Obsługa recipeUrl
 
             mealFound = true;
             updatedMealMongo = meal;
@@ -140,6 +143,7 @@ router.put('/meals/:id', authenticateToken, async (req, res) => {
       if (carbs !== undefined) updateData.carbs = carbs;
       if (fat !== undefined) updateData.fat = fat;
       if (image !== undefined) updateData.image = image;
+      if (recipeUrl !== undefined) updateData.recipeUrl = recipeUrl; // Obsługa recipeUrl
 
       const [updatedRows] = await MySQLMeal.update(updateData, { where: { id: mysqlIdToUse } });
 
@@ -162,6 +166,7 @@ router.put('/meals/:id', authenticateToken, async (req, res) => {
           carbs: updatedMealMongo?.carbs || updatedMealMySQL?.carbs,
           fat: updatedMealMongo?.fat || updatedMealMySQL?.fat,
           image: updatedMealMongo?.image || updatedMealMySQL?.image,
+          recipeUrl: updatedMealMongo?.recipeUrl || updatedMealMySQL?.recipeUrl, // Uwzględnij recipeUrl
         },
       };
 

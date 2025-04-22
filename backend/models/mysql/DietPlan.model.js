@@ -107,6 +107,10 @@ const Meal = sequelize.define('DietMeal', {
     type: DataTypes.STRING,
     allowNull: false,
   },
+  recipeUrl: {
+    type: DataTypes.STRING,
+    allowNull: false, // Nowe pole na URL przepisu
+  },
 });
 
 // Relacje
