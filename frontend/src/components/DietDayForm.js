@@ -80,7 +80,7 @@ const DietDayForm = ({ day, onUpdate, onRemove }) => {
   // Handle meal selection/update
   const handleMealSelect = (meal) => {
     let updatedMeals;
-
+  
     if (mealDialogMode === 'add') {
       const newMeal = {
         recipeId: meal.id,
@@ -90,6 +90,7 @@ const DietDayForm = ({ day, onUpdate, onRemove }) => {
         carbs: meal.carbs,
         fat: meal.fat,
         image: meal.image,
+        recipeUrl: meal.recipeUrl, // Dodano recipeUrl
         order: dayData.meals.length + 1,
       };
       updatedMeals = [...dayData.meals, newMeal];
@@ -104,9 +105,10 @@ const DietDayForm = ({ day, onUpdate, onRemove }) => {
         carbs: meal.carbs,
         fat: meal.fat,
         image: meal.image,
+        recipeUrl: meal.recipeUrl, // Dodano recipeUrl
       };
     }
-
+  
     const updatedDay = { ...dayData, meals: updatedMeals };
     setDayData(updatedDay);
     onUpdate(updatedDay);

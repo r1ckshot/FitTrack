@@ -61,8 +61,8 @@ router.post('/diet-plans', authenticateToken, async (req, res) => {
         }
         if (day.meals && day.meals.length > 0) {
           for (const meal of day.meals) {
-            if (!meal.recipeId || !meal.title || typeof meal.calories !== 'number') {
-              return res.status(400).json({ error: "Każdy posiłek musi zawierać 'recipeId', 'title' i 'calories'." });
+            if (!meal.recipeId || !meal.title || typeof meal.calories !== 'number' || !meal.recipeUrl) {
+              return res.status(400).json({ error: "Każdy posiłek musi zawierać 'recipeId', 'title', 'calories' oraz 'recipeUrl'." });
             }
           }
         }
@@ -123,6 +123,7 @@ router.post('/diet-plans', authenticateToken, async (req, res) => {
                   carbs: meal.carbs,
                   fat: meal.fat,
                   image: meal.image,
+                  recipeUrl: meal.recipeUrl, // Dodano recipeUrl
                 });
               }
             }
@@ -213,6 +214,7 @@ router.get('/diet-plans', authenticateToken, async (req, res) => {
                     carbs: meal.carbs,
                     fat: meal.fat,
                     image: meal.image,
+                    recipeUrl: meal.recipeUrl, // Uwzględniono recipeUrl
                   }))
                 : [],
             }))
@@ -309,6 +311,7 @@ router.get('/diet-plans/:id', authenticateToken, async (req, res) => {
                       carbs: meal.carbs,
                       fat: meal.fat,
                       image: meal.image,
+                      recipeUrl: meal.recipeUrl, // Uwzględnij recipeUrl
                     }))
                   : [],
               }))
@@ -428,6 +431,7 @@ router.put('/diet-plans/:id', authenticateToken, async (req, res) => {
                       carbs: meal.carbs,
                       fat: meal.fat,
                       image: meal.image,
+                      recipeUrl: meal.recipeUrl, // Dodano recipeUrl
                     },
                     { where: { id: existingMeal.id } }
                   );
@@ -441,6 +445,7 @@ router.put('/diet-plans/:id', authenticateToken, async (req, res) => {
                     carbs: meal.carbs,
                     fat: meal.fat,
                     image: meal.image,
+                    recipeUrl: meal.recipeUrl, // Dodano recipeUrl
                   });
                 }
               }

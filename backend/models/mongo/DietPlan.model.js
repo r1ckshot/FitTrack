@@ -11,6 +11,7 @@ const MealSchema = new Schema({
   carbs: { type: String, required: true }, // Węglowodany (np. "20g")
   fat: { type: String, required: true }, // Tłuszcze (np. "5g")
   image: { type: String, required: true }, // URL obrazka przepisu
+  recipeUrl: { type: String, required: true }, // URL do przepisu
 });
 
 // Schema for DietDay
