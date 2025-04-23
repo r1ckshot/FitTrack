@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Box, TextField, Button, Typography, CircularProgress, Tabs, Tab, Divider, IconButton } from '@mui/material';
+import { Box, TextField, Button, Typography, CircularProgress, Tabs, Tab, Divider } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import SaveIcon from '@mui/icons-material/Save';
 import api from '../services/api';
 import DietDayForm from './DietDayForm';
+import { useSnackbar } from '../contexts/SnackbarContext'; // Dodano import Snackbar
 
 const DietPlanForm = ({ plan, onClose }) => {
   const [formData, setFormData] = useState({
@@ -15,6 +16,7 @@ const DietPlanForm = ({ plan, onClose }) => {
   const [saving, setSaving] = useState(false);
   const [tabValue, setTabValue] = useState(0);
   const [errors, setErrors] = useState({});
+  const { showSnackbar } = useSnackbar(); // Dodano hook do Snackbara
 
   // Load plan data if editing existing plan
   useEffect(() => {
@@ -27,38 +29,50 @@ const DietPlanForm = ({ plan, onClose }) => {
     }
   }, [plan]);
 
-  // Handle form input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-
-    // Clear error for this field if exists
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: null }));
     }
   };
 
-  // Validate form data
   const validateForm = () => {
     const newErrors = {};
     if (!formData.name.trim()) {
       newErrors.name = 'Nazwa planu jest wymagana';
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Validate days and meals
+  // Dodano funkcję sprawdzającą unikalność nazwy
+  const checkPlanNameExists = async () => {
+    try {
+      const response = await api.get('/diet-plans');
+      const existingPlans = response.data;
+      
+      const planWithSameName = existingPlans.find(existingPlan => 
+        existingPlan.name.toLowerCase() === formData.name.toLowerCase() && 
+        existingPlan._id !== (plan?._id || plan?.id)
+      );
+      
+      return !!planWithSameName;
+    } catch (error) {
+      showSnackbar('Błąd podczas sprawdzania nazwy planu', 'error');
+      return false;
+    }
+  };
+
   const validateDaysAndMeals = (days) => {
     for (const day of days) {
       if (!day.dayOfWeek || !day.name || typeof day.order !== 'number') {
-        return false; // Dzień nie jest kompletny
+        return false;
       }
-      if (day.meals && day.meals.length > 0) {
+      if (day.meals?.length > 0) {
         for (const meal of day.meals) {
           if (!meal.recipeId || !meal.title || typeof meal.calories !== 'number') {
-            return false; // Posiłek nie jest kompletny
+            return false;
           }
         }
       }
@@ -66,22 +80,22 @@ const DietPlanForm = ({ plan, onClose }) => {
     return true;
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!validateForm()) {
+    if (!validateForm()) return;
+
+    // Dodano sprawdzenie unikalności nazwy
+    const nameExists = await checkPlanNameExists();
+    if (nameExists) {
+      showSnackbar('Plan dietetyczny o tej nazwie już istnieje', 'error');
       return;
     }
 
     const preparedFormData = JSON.parse(JSON.stringify(formData));
 
     if (!validateDaysAndMeals(preparedFormData.days)) {
-      console.error('Niekompletne dane dni dietetycznych lub posiłków.');
-      setErrors((prev) => ({
-        ...prev,
-        general: 'Niepoprawne dane posiłków. Sprawdź, czy wszystkie wymagane pola są wypełnione.',
-      }));
+      showSnackbar('Niekompletne dane dni lub posiłków! Sprawdź wymagane pola', 'error');
       return;
     }
 
@@ -98,19 +112,15 @@ const DietPlanForm = ({ plan, onClose }) => {
       };
 
       if (plan) {
-        // Update existing plan
         await api.put(`/diet-plans/${plan._id || plan.id}`, planData);
+        showSnackbar('Plan dietetyczny został zaktualizowany', 'success');
       } else {
-        // Create new plan
         await api.post('/diet-plans', planData);
+        showSnackbar('Plan dietetyczny został utworzony', 'success');
       }
-      onClose(true); // Close with refresh flag
+      onClose(true);
     } catch (error) {
-      console.error('Błąd podczas zapisywania planu dietetycznego:', error);
-      setErrors((prev) => ({
-        ...prev,
-        general: 'Wystąpił błąd podczas zapisywania planu.',
-      }));
+      showSnackbar('Wystąpił błąd podczas zapisywania planu', 'error');
     } finally {
       setSaving(false);
     }

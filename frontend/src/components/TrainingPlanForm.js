@@ -4,6 +4,7 @@ import AddIcon from '@mui/icons-material/Add';
 import SaveIcon from '@mui/icons-material/Save';
 import api from '../services/api';
 import TrainingDayForm from './TrainingDayForm';
+import { useSnackbar } from '../contexts/SnackbarContext'; // Zaimportowany kontekst Snackbar
 
 const TrainingPlanForm = ({ plan, onClose }) => {
   const [formData, setFormData] = useState({
@@ -15,6 +16,7 @@ const TrainingPlanForm = ({ plan, onClose }) => {
   const [saving, setSaving] = useState(false);
   const [tabValue, setTabValue] = useState(0);
   const [errors, setErrors] = useState({});
+  const { showSnackbar } = useSnackbar(); // Użyj kontekstu do wyświetlania komunikatów
 
   // Load plan data if editing existing plan
   useEffect(() => {
@@ -49,6 +51,30 @@ const TrainingPlanForm = ({ plan, onClose }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Sprawdź, czy plan o podanej nazwie już istnieje
+  const checkPlanNameExists = async () => {
+    try {
+      // Pobierz wszystkie plany treningowe
+      const response = await api.get('/training-plans');
+      const existingPlans = response.data;
+      
+      // Jeśli edytujemy istniejący plan, ignorujemy jego nazwę przy sprawdzaniu
+      const planWithSameName = existingPlans.find(existingPlan => 
+        existingPlan.name.toLowerCase() === formData.name.toLowerCase() && 
+        existingPlan._id !== (plan?._id || plan?.id)
+      );
+      
+      if (planWithSameName) {
+        return true; // Znaleziono duplikat
+      }
+      
+      return false; // Nie znaleziono duplikatu
+    } catch (error) {
+      showSnackbar('Błąd podczas sprawdzania nazwy planu', 'error');
+      return false; // W razie błędu pozwalamy kontynuować
+    }
+  };
+
   // Przed wysłaniem planu waliduj wszystkie dane
   const validateDaysAndExercises = (days) => {
     for (const day of days) {
@@ -75,6 +101,13 @@ const TrainingPlanForm = ({ plan, onClose }) => {
     e.preventDefault();
 
     if (!validateForm()) {
+      return;
+    }
+    
+    // Sprawdź czy nazwa planu jest unikalna
+    const nameExists = await checkPlanNameExists();
+    if (nameExists) {
+      showSnackbar('Plan treningowy o tej nazwie już istnieje', 'error');
       return;
     }
 
@@ -104,7 +137,7 @@ const TrainingPlanForm = ({ plan, onClose }) => {
     });
 
     if (!validateDaysAndExercises(preparedFormData.days)) {
-      console.error("Niekompletne dane dni treningowych lub ćwiczeń.");
+      showSnackbar('Niepoprawne dane ćwiczeń. Sprawdź czy wszystkie wymagane pola są wypełnione.', 'error');
       setErrors(prev => ({ ...prev, general: "Niepoprawne dane ćwiczeń. Sprawdź czy wszystkie wymagane pola są wypełnione." }));
       return;
     }
@@ -126,13 +159,15 @@ const TrainingPlanForm = ({ plan, onClose }) => {
       if (plan) {
         // Update existing plan
         await api.put(`/training-plans/${plan._id || plan.id}`, planData);
+        showSnackbar('Plan treningowy został zaktualizowany', 'success');
       } else {
         // Create new plan
         await api.post('/training-plans', planData);
+        showSnackbar('Plan treningowy został utworzony', 'success');
       }
       onClose(true); // Close with refresh flag
     } catch (error) {
-      console.error('Błąd podczas zapisywania planu treningowego:', error);
+      showSnackbar('Wystąpił błąd podczas zapisywania planu', 'error');
       setErrors(prev => ({ ...prev, general: "Wystąpił błąd podczas zapisywania planu." }));
     } finally {
       setSaving(false);
