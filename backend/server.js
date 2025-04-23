@@ -65,6 +65,9 @@ app.use('/api', dietDaysRoutes); // Trasy dla Diet Days
 const dietMealsRoutes = require('./routes/dietMeal.routes');
 app.use('/api', dietMealsRoutes); // Trasy dla Diet Meals
 
+const userProfileRoutes = require('./routes/userProfile.routes');
+app.use('/api', userProfileRoutes); // Trasy dla Diet Meals
+
 // Ustawienie portu i uruchomienie serwera
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
