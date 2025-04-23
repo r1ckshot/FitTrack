@@ -122,47 +122,56 @@ router.put('/profile/change-password', authenticateToken, async (req, res) => {
   }
 
   try {
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    let passwordVerified = false;
     let updatedInMongo = false;
     let updatedInMySQL = false;
-    let passwordVerified = false;
 
-    if (databaseType === 'mongo' || databaseType === 'both') {
-      const mongoUser = await MongoUser.findOne({ username });
-      if (mongoUser && await bcrypt.compare(currentPassword, mongoUser.password)) {
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        mongoUser.password = hashedPassword;
-        await mongoUser.save();
-        updatedInMongo = true;
-        passwordVerified = true;
-      } else if (databaseType === 'mongo') {
-        return res.status(400).json({ error: 'Obecne hasło jest nieprawidłowe.' });
-      }
+    // Sprawdź hasło w Mongo
+    const mongoUser = (databaseType === 'mongo' || databaseType === 'both')
+      ? await MongoUser.findOne({ username })
+      : null;
+
+    if (mongoUser && await bcrypt.compare(currentPassword, mongoUser.password)) {
+      passwordVerified = true;
     }
 
-    if ((databaseType === 'mysql' || (databaseType === 'both' && !passwordVerified))) {
-      const mysqlUser = await MySQLUser.findOne({ where: { username } });
-      if (mysqlUser && await bcrypt.compare(currentPassword, mysqlUser.password)) {
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        await mysqlUser.update({ password: hashedPassword });
-        updatedInMySQL = true;
-      } else if (databaseType === 'mysql' || !passwordVerified) {
-        return res.status(400).json({ error: 'Obecne hasło jest nieprawidłowe.' });
-      }
+    // Sprawdź hasło w MySQL, jeśli nie było wcześniej potwierdzone
+    const mysqlUser = (databaseType === 'mysql' || databaseType === 'both')
+      ? await MySQLUser.findOne({ where: { username } })
+      : null;
+
+    if (!passwordVerified && mysqlUser && await bcrypt.compare(currentPassword, mysqlUser.password)) {
+      passwordVerified = true;
     }
 
-    if (updatedInMongo || updatedInMySQL) {
-      return res.status(200).json({
-        message: 'Hasło zostało zmienione pomyślnie.',
-        updated: { mongo: updatedInMongo, mysql: updatedInMySQL }
-      });
-    } else {
-      return res.status(404).json({ error: 'Nie znaleziono użytkownika.' });
+    if (!passwordVerified) {
+      return res.status(400).json({ error: 'Obecne hasło jest nieprawidłowe.' });
     }
+
+    // Zaktualizuj Mongo
+    if (mongoUser) {
+      mongoUser.password = hashedPassword;
+      await mongoUser.save();
+      updatedInMongo = true;
+    }
+
+    // Zaktualizuj MySQL
+    if (mysqlUser) {
+      await mysqlUser.update({ password: hashedPassword });
+      updatedInMySQL = true;
+    }
+
+    res.status(200).json({
+      message: 'Hasło zostało zmienione pomyślnie.',
+      updated: { mongo: updatedInMongo, mysql: updatedInMySQL }
+    });
   } catch (error) {
     console.error('Błąd podczas zmiany hasła:', error);
     res.status(500).json({ error: 'Błąd podczas zmiany hasła.' });
   }
 });
+
 
 // Usuwanie konta użytkownika
 router.delete('/profile', authenticateToken, async (req, res) => {
