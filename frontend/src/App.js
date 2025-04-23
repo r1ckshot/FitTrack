@@ -11,68 +11,55 @@ import ProgressPage from './pages/ProgressPage';
 import TrainingPlansPage from './pages/TrainingPlansPages';
 import DietPlansPage from './pages/DietPlansPage';
 import ProfilePage from './pages/UserProfile';
+import { SnackbarProvider } from './contexts/SnackbarContext'; // dodany import
 
 const App = () => {
-  const [role, setRole] = useState(null); // Rola użytkownika
-  const [isLoading, setIsLoading] = useState(true); // Stan ładowania aplikacji
+  const [role, setRole] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Funkcja aktualizująca rolę na podstawie tokena
   const updateRole = () => {
-    const userRole = getUserRole(); // Pobierz rolę z tokena
-    setRole(userRole); // Ustaw rolę
-    setIsLoading(false); // Zakończ ładowanie
+    const userRole = getUserRole();
+    setRole(userRole);
+    setIsLoading(false);
   };
 
-  // Aktualizujemy rolę przy załadowaniu aplikacji
   useEffect(() => {
-    updateRole(); // Wywołaj funkcję aktualizacji roli
+    updateRole();
   }, []);
 
-  // Wyświetl wskaźnik ładowania, jeśli aplikacja jeszcze się inicjalizuje
   if (isLoading) {
     return <div>Loading...</div>;
   }
 
   return (
-    <Router>
-      <Routes>
-        {/* Strona główna */}
-        <Route path="/" element={<HomePage />} />
-
-        {/* Rejestracja i Logowanie */}
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/login" element={<LoginPage updateRole={updateRole} />} />
-
-        {/* Dashboard z dynamicznym renderowaniem na podstawie roli */}
-        <Route
-          path="/dashboard"
-          element={
-            role === 'client' ? (
-              <ClientDashboard />
-            ) : role === 'trainer' ? (
-              <TrainerDashboard />
-            ) : role === 'admin' ? (
-              <AdminDashboard />
-            ) : (
-              <Navigate to="/" replace />
-            )
-          }
-        />
-        <Route path="/progress" element={<ProgressPage />} />
-
-        {/* Strona planów treningowych */}
-        <Route path="/exercises" element={<TrainingPlansPage />} />
-
-        {/* Strona planów deietycznych */}
-        <Route path="/diets" element={<DietPlansPage />} />
-
-        {/* Strona profilu użytkownika */}
-        <Route path="/profile" element={<ProfilePage />} />
-
-        {/* Obsługa nieznanych tras */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Router>
+    <SnackbarProvider> 
+      <Router>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/login" element={<LoginPage updateRole={updateRole} />} />
+          <Route
+            path="/dashboard"
+            element={
+              role === 'client' ? (
+                <ClientDashboard />
+              ) : role === 'trainer' ? (
+                <TrainerDashboard />
+              ) : role === 'admin' ? (
+                <AdminDashboard />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route path="/progress" element={<ProgressPage />} />
+          <Route path="/exercises" element={<TrainingPlansPage />} />
+          <Route path="/diets" element={<DietPlansPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Router>
+    </SnackbarProvider>
   );
 };
 

@@ -1,11 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Box,
   Button,
   TextField,
   Typography,
-  Snackbar,
-  Alert,
   MenuItem,
   Select,
   FormControl,
@@ -17,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { motion } from 'framer-motion';
 import BackgroundIcons from '../components/BackgroundIcons';
+import { useSnackbar } from '../contexts/SnackbarContext'; // Dodany import kontekstu Snackbar
 
 const validationSchema = yup.object({
   username: yup.string().required('Nazwa użytkownika jest wymagana'),
@@ -32,8 +31,8 @@ const validationSchema = yup.object({
 });
 
 const RegisterPage = () => {
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const navigate = useNavigate();
+  const { showSnackbar } = useSnackbar();
 
   const formik = useFormik({
     initialValues: {
@@ -47,10 +46,10 @@ const RegisterPage = () => {
     onSubmit: async (values) => {
       try {
         await api.post('/auth/register', values);
-        setSnackbar({ open: true, message: 'Zarejestrowano pomyślnie! Przekierowanie do logowania...', severity: 'success' });
+        showSnackbar('Zarejestrowano pomyślnie! Przekierowanie do logowania...', 'success');
         setTimeout(() => navigate('/login'), 3000); // Przekierowanie z opóźnieniem
       } catch (error) {
-        setSnackbar({ open: true, message: error.response?.data?.error || 'Błąd rejestracji', severity: 'error' });
+        showSnackbar(error.response?.data?.error || 'Błąd rejestracji', 'error');
       }
     },
   });
@@ -70,16 +69,6 @@ const RegisterPage = () => {
       {/* Tło z ikonkami */}
       <BackgroundIcons />
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
       <motion.div
         initial={{ y: -200, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}

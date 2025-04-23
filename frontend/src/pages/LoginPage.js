@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { Box, Button, TextField, Typography, Snackbar, Alert } from '@mui/material';
+import React from 'react';
+import { Box, Button, TextField, Typography } from '@mui/material';
 import { useFormik } from 'formik';
 import { useNavigate } from 'react-router-dom';
 import * as yup from 'yup';
 import api from '../services/api';
 import { motion } from 'framer-motion';
 import BackgroundIcons from '../components/BackgroundIcons';
+import { useSnackbar } from '../contexts/SnackbarContext'; 
 
 const validationSchema = yup.object({
   email: yup.string().email('Nieprawidłowy email').required('Email jest wymagany'),
@@ -13,8 +14,8 @@ const validationSchema = yup.object({
 });
 
 const LoginPage = ({ updateRole }) => {
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const navigate = useNavigate();
+  const { showSnackbar } = useSnackbar();
 
   const formik = useFormik({
     initialValues: { email: '', password: '' },
@@ -26,9 +27,9 @@ const LoginPage = ({ updateRole }) => {
         
         updateRole(); // Aktualizujemy rolę po zapisaniu tokena
         navigate('/dashboard'); // Przekierowanie do dashboardu
-        setSnackbar({ open: true, message: 'Zalogowano pomyślnie!', severity: 'success' });
+        showSnackbar('Zalogowano pomyślnie!', 'success');
       } catch (error) {
-        setSnackbar({ open: true, message: error.response?.data?.error || 'Błąd logowania', severity: 'error' });
+        showSnackbar(error.response?.data?.error || 'Błąd logowania', 'error');
       }
     },
   });
@@ -48,16 +49,6 @@ const LoginPage = ({ updateRole }) => {
       {/* Tło z ikonkami */}
       <BackgroundIcons />
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
       <motion.div
         initial={{ y: -200, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
