@@ -46,21 +46,41 @@ const DietPlanForm = ({ plan, onClose }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Dodano funkcję sprawdzającą unikalność nazwy
+  // Sprawdź, czy plan o podanej nazwie już istnieje
   const checkPlanNameExists = async () => {
     try {
+      // Pobierz wszystkie plany treningowe
       const response = await api.get('/diet-plans');
       const existingPlans = response.data;
       
-      const planWithSameName = existingPlans.find(existingPlan => 
-        existingPlan.name.toLowerCase() === formData.name.toLowerCase() && 
-        existingPlan._id !== (plan?._id || plan?.id)
-      );
+      // Przygotuj znormalizowaną nazwę nowego planu (usuń zbędne spacje, przytnij)
+      const normalizedNewName = formData.name.toLowerCase().trim().replace(/\s+/g, ' ');
       
-      return !!planWithSameName;
+      // Jeśli edytujemy istniejący plan, ignorujemy jego nazwę przy sprawdzaniu
+      const planWithSameName = existingPlans.find(existingPlan => {
+        // Znormalizuj również nazwę istniejącego planu
+        const normalizedExistingName = existingPlan.name.toLowerCase().trim().replace(/\s+/g, ' ');
+        
+        // Sprawdź czy znormalizowane nazwy są takie same
+        const sameNameCheck = normalizedExistingName === normalizedNewName;
+        
+        // Jeśli nie edytujemy planu, każda taka sama nazwa jest duplikatem
+        if (!plan) {
+          return sameNameCheck;
+        }
+        
+        // Jeśli edytujemy plan, porównujemy ID z uwzględnieniem obu typów ID (_id dla MongoDB i id dla MySQL)
+        const currentPlanId = plan._id || plan.id;
+        const existingPlanId = existingPlan._id || existingPlan.id;
+        
+        // To jest duplikat tylko jeśli nazwa jest taka sama, ale ID jest inne
+        return sameNameCheck && currentPlanId !== existingPlanId;
+      });
+      
+      return !!planWithSameName; // Zwraca true jeśli znaleziono duplikat
     } catch (error) {
       showSnackbar('Błąd podczas sprawdzania nazwy planu', 'error');
-      return false;
+      return false; // W razie błędu pozwalamy kontynuować
     }
   };
 

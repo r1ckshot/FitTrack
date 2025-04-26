@@ -49,24 +49,11 @@ app.use('/api', progressRoutes);
 const trainingPlansRoutes = require('./routes/trainingPlans.routes');
 app.use('/api', trainingPlansRoutes); // Trasy dla Training Plans
 
-const trainingDaysRoutes = require('./routes/trainingDays.routes');
-app.use('/api', trainingDaysRoutes); // Trasy dla Training Days
-
-const trainingExercisesRoutes = require('./routes/trainingExercises.routes');
-app.use('/api', trainingExercisesRoutes); // Trasy dla Training Exercises
-
-//Trasy dla diet
 const dietPlansRoutes = require('./routes/dietPlans.routes');
 app.use('/api', dietPlansRoutes); // Trasy dla Diet Plans
 
-const dietDaysRoutes = require('./routes/dietDays.routes');
-app.use('/api', dietDaysRoutes); // Trasy dla Diet Days
-
-const dietMealsRoutes = require('./routes/dietMeal.routes');
-app.use('/api', dietMealsRoutes); // Trasy dla Diet Meals
-
 const userProfileRoutes = require('./routes/userProfile.routes');
-app.use('/api', userProfileRoutes); // Trasy dla Diet Meals
+app.use('/api', userProfileRoutes); 
 
 // Ustawienie portu i uruchomienie serwera
 const PORT = process.env.PORT || 8080;

@@ -26,6 +26,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
+import SwapVertIcon from '@mui/icons-material/SwapVert';
 import MealSelection from './MealSelection';
 
 const DietDayForm = ({ day, onUpdate, onRemove }) => {
@@ -90,7 +91,7 @@ const DietDayForm = ({ day, onUpdate, onRemove }) => {
         carbs: meal.carbs,
         fat: meal.fat,
         image: meal.image,
-        recipeUrl: meal.recipeUrl, // Dodano recipeUrl
+        recipeUrl: meal.recipeUrl,
         order: dayData.meals.length + 1,
       };
       updatedMeals = [...dayData.meals, newMeal];
@@ -105,7 +106,8 @@ const DietDayForm = ({ day, onUpdate, onRemove }) => {
         carbs: meal.carbs,
         fat: meal.fat,
         image: meal.image,
-        recipeUrl: meal.recipeUrl, // Dodano recipeUrl
+        recipeUrl: meal.recipeUrl,
+        order: updatedMeals[editMealIndex].order, // Keep the same order
       };
     }
   
@@ -118,7 +120,41 @@ const DietDayForm = ({ day, onUpdate, onRemove }) => {
   // Remove meal
   const handleRemoveMeal = (index) => {
     const updatedMeals = dayData.meals.filter((_, i) => i !== index);
-    const updatedDay = { ...dayData, meals: updatedMeals };
+    
+    // Dodaj aktualizację kolejności posiłków po usunięciu
+    const reorderedMeals = updatedMeals.map((meal, idx) => ({
+      ...meal,
+      order: idx + 1
+    }));
+    
+    const updatedDay = { ...dayData, meals: reorderedMeals };
+    setDayData(updatedDay);
+    onUpdate(updatedDay);
+  };
+
+  // Move meal up or down
+  const handleMoveMeal = (index, direction) => {
+    if (
+      (direction === 'up' && index === 0) ||
+      (direction === 'down' && index === dayData.meals.length - 1)
+    ) {
+      return;
+    }
+
+    const updatedMeals = [...dayData.meals];
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+
+    // Swap meals
+    [updatedMeals[index], updatedMeals[newIndex]] = 
+      [updatedMeals[newIndex], updatedMeals[index]];
+    
+    // Update order property for all meals
+    const reorderedMeals = updatedMeals.map((meal, idx) => ({
+      ...meal,
+      order: idx + 1
+    }));
+
+    const updatedDay = { ...dayData, meals: reorderedMeals };
     setDayData(updatedDay);
     onUpdate(updatedDay);
   };
@@ -229,30 +265,68 @@ const DietDayForm = ({ day, onUpdate, onRemove }) => {
                   pr: 15,
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                  {meal.image && (
-                    <Box
-                      component="img"
-                      src={meal.image}
-                      alt={meal.title}
-                      sx={{ width: 60, height: 60, mr: 2, objectFit: 'cover' }}
-                    />
-                  )}
-                  <ListItemText
-                    primary={meal.title || 'Posiłek'}
-                    secondary={
-                      <>
+                <Box sx={{ display: 'flex', width: '100%', flexDirection: { xs: 'column', md: 'row' } }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', minWidth: '250px', mr: 2 }}>
+                    {meal.image && (
+                      <Box
+                        component="img"
+                        src={meal.image}
+                        alt={meal.title}
+                        sx={{ width: 60, height: 60, mr: 2, objectFit: 'cover' }}
+                      />
+                    )}
+                    <ListItemText
+                      primary={meal.title || 'Posiłek'}
+                      secondary={
                         <Typography variant="body2">
                           Kalorie: {meal.calories} kcal
                         </Typography>
-                        <Typography variant="body2">
-                          Białko: {meal.protein}, Węglowodany: {meal.carbs}, Tłuszcze: {meal.fat}
-                        </Typography>
-                      </>
-                    }
-                  />
+                      }
+                    />
+                  </Box>
+
+                  <Box sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: 1,
+                    my: { xs: 2, md: 0 },
+                    width: '100%'
+                  }}>
+                    <Typography variant="body2" sx={{ mr: 2 }}>
+                      Białko: {meal.protein}g
+                    </Typography>
+                    <Typography variant="body2" sx={{ mr: 2 }}>
+                      Węglowodany: {meal.carbs}g
+                    </Typography>
+                    <Typography variant="body2">
+                      Tłuszcze: {meal.fat}g
+                    </Typography>
+                  </Box>
                 </Box>
-                <ListItemSecondaryAction>
+
+                <ListItemSecondaryAction sx={{
+                  display: 'flex',
+                  height: '100%',
+                  alignItems: 'center',
+                  right: 8
+                }}>
+                  <IconButton
+                    edge="end"
+                    onClick={() => handleMoveMeal(index, 'up')}
+                    disabled={index === 0}
+                    sx={{ opacity: index === 0 ? 0.3 : 1 }}
+                  >
+                    <SwapVertIcon sx={{ transform: 'rotate(180deg)' }} />
+                  </IconButton>
+                  <IconButton
+                    edge="end"
+                    onClick={() => handleMoveMeal(index, 'down')}
+                    disabled={index === dayData.meals.length - 1}
+                    sx={{ opacity: index === dayData.meals.length - 1 ? 0.3 : 1 }}
+                  >
+                    <SwapVertIcon />
+                  </IconButton>
                   <IconButton edge="end" onClick={() => handleEditMeal(index)}>
                     <EditIcon />
                   </IconButton>

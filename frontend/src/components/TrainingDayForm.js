@@ -108,6 +108,7 @@ const TrainingDayForm = ({ day, onUpdate, onRemove }) => {
         exerciseId: exercise.id,
         exerciseName: exercise.name,
         gifUrl: exercise.gifUrl,
+        order: existingExercise.order,
         // Aktualizujemy również dane o ćwiczeniu
         bodyPart: exercise.bodyPart,
         equipment: exercise.equipment,
@@ -137,7 +138,12 @@ const TrainingDayForm = ({ day, onUpdate, onRemove }) => {
 
   // Remove exercise
   const handleRemoveExercise = (index) => {
-    const updatedExercises = dayData.exercises.filter((_, i) => i !== index);
+    const updatedExercises = dayData.exercises
+      .filter((_, i) => i !== index)
+      .map((exercise, idx) => ({
+        ...exercise,
+        order: idx + 1
+      }));
     const updatedDay = { ...dayData, exercises: updatedExercises };
     setDayData(updatedDay);
     onUpdate(updatedDay);
@@ -156,15 +162,21 @@ const TrainingDayForm = ({ day, onUpdate, onRemove }) => {
     ) {
       return;
     }
-
+  
     const updatedExercises = [...dayData.exercises];
     const newIndex = direction === 'up' ? index - 1 : index + 1;
-
-    // Swap exercises
-    [updatedExercises[index], updatedExercises[newIndex]] =
+  
+    // Zamiana miejscami
+    [updatedExercises[index], updatedExercises[newIndex]] = 
       [updatedExercises[newIndex], updatedExercises[index]];
-
-    const updatedDay = { ...dayData, exercises: updatedExercises };
+  
+    // Aktualizacja order dla wszystkich ćwiczeń
+    const reorderedExercises = updatedExercises.map((ex, idx) => ({
+      ...ex,
+      order: idx + 1
+    }));
+  
+    const updatedDay = { ...dayData, exercises: reorderedExercises };
     setDayData(updatedDay);
     onUpdate(updatedDay);
   };
