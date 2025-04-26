@@ -65,7 +65,7 @@ const DietDay = sequelize.define('DietDay', {
 });
 
 // Model Meal
-const Meal = sequelize.define('DietMeal', {
+const Meal = sequelize.define('Meal', {
   id: {
     type: DataTypes.INTEGER,
     autoIncrement: true,
@@ -110,6 +110,10 @@ const Meal = sequelize.define('DietMeal', {
   recipeUrl: {
     type: DataTypes.STRING,
     allowNull: false, // Nowe pole na URL przepisu
+  },
+  order: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
   },
 });
 
