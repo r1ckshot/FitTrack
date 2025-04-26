@@ -61,8 +61,8 @@ router.post('/diet-plans', authenticateToken, async (req, res) => {
         }
         if (day.meals && day.meals.length > 0) {
           for (const meal of day.meals) {
-            if (!meal.recipeId || !meal.title || typeof meal.calories !== 'number' || !meal.recipeUrl) {
-              return res.status(400).json({ error: "Każdy posiłek musi zawierać 'recipeId', 'title', 'calories' oraz 'recipeUrl'." });
+            if (!meal.recipeId || !meal.title || typeof meal.calories !== 'number' || typeof meal.order !== "number") {
+              return res.status(400).json({ error: "Każdy posiłek musi zawierać 'recipeId', 'title', 'calories' oraz 'order'." });
             }
           }
         }
@@ -123,7 +123,8 @@ router.post('/diet-plans', authenticateToken, async (req, res) => {
                   carbs: meal.carbs,
                   fat: meal.fat,
                   image: meal.image,
-                  recipeUrl: meal.recipeUrl, // Dodano recipeUrl
+                  recipeUrl: meal.recipeUrl, 
+                  order: meal.order,
                 });
               }
             }
@@ -184,7 +185,14 @@ router.get('/diet-plans', authenticateToken, async (req, res) => {
       const rawMysqlPlans = await safeMySQLOperation(async () => {
         return await MySQLDietPlan.findAll({
           where: { userId: mysqlUserId },
-          include: [{ model: DietDay, include: [Meal] }],
+          include: [{
+            model: DietDay,
+            include: [ Meal ]
+          }],
+          order: [
+            [ DietDay, 'order', 'ASC' ],            
+            [ DietDay, Meal,   'order', 'ASC' ]     
+          ]
         });
       }, []);
 
@@ -214,7 +222,8 @@ router.get('/diet-plans', authenticateToken, async (req, res) => {
                     carbs: meal.carbs,
                     fat: meal.fat,
                     image: meal.image,
-                    recipeUrl: meal.recipeUrl, // Uwzględniono recipeUrl
+                    recipeUrl: meal.recipeUrl,
+                    order: meal.order,
                   }))
                 : [],
             }))
@@ -311,7 +320,8 @@ router.get('/diet-plans/:id', authenticateToken, async (req, res) => {
                       carbs: meal.carbs,
                       fat: meal.fat,
                       image: meal.image,
-                      recipeUrl: meal.recipeUrl, // Uwzględnij recipeUrl
+                      recipeUrl: meal.recipeUrl, 
+                      order: meal.order,
                     }))
                   : [],
               }))
@@ -391,52 +401,79 @@ router.put('/diet-plans/:id', authenticateToken, async (req, res) => {
 
     if ((databaseType === 'mysql' || databaseType === 'both') && mysqlId && !isNaN(mysqlId)) {
       updatedMySQL = await safeMySQLOperation(async () => {
+        // 1. Aktualizacja głównego rekordu planu
         await MySQLDietPlan.update(
           { name, description, isActive, dateUpdated: new Date() },
           { where: { id: mysqlId } }
         );
 
+        // 2. Pobierz wszystkie istniejące dni diety dla tego planu
+        const existingDays = await DietDay.findAll({
+          where: { planId: mysqlId },
+          include: [Meal]
+        });
+        
+        // Tablica do śledzenia dni, które zostaną zachowane
+        const updatedDayIds = [];
+        
+        // 3. Aktualizacja lub utworzenie dni diety
         if (days && Array.isArray(days)) {
           for (const day of days) {
-            let existingDay = await DietDay.findOne({
-              where: { planId: mysqlId, order: day.order },
-            });
+            let existingDay = existingDays.find(d => d.order === day.order);
 
             if (existingDay) {
+              // Aktualizacja istniejącego dnia
               await DietDay.update(
                 { dayOfWeek: day.dayOfWeek, name: day.name },
                 { where: { id: existingDay.id } }
               );
+              updatedDayIds.push(existingDay.id);
             } else {
-              existingDay = await DietDay.create({
+              // Dodanie nowego dnia, jeśli nie istnieje
+              const newDay = await DietDay.create({
                 planId: mysqlId,
                 dayOfWeek: day.dayOfWeek,
                 name: day.name,
                 order: day.order,
               });
+              updatedDayIds.push(newDay.id);
+              existingDay = newDay;
             }
 
+            // Tablica do śledzenia posiłków, które zostaną zachowane
+            const updatedMealIds = [];
+            
+            // Pobierz wszystkie istniejące posiłki dla tego dnia
+            const existingMeals = existingDay.Meals || [];
+
+            // Obsługa posiłków dla dnia
             if (day.meals && Array.isArray(day.meals)) {
               for (const meal of day.meals) {
-                let existingMeal = await Meal.findOne({
-                  where: { dayId: existingDay.id, recipeId: meal.recipeId },
-                });
+
+                let existingMeal = meal.id
+                ? existingMeals.find(m => m.id === meal.id)
+                : existingMeals.find(m => m.order === meal.order);
 
                 if (existingMeal) {
+                  // Aktualizacja istniejącego posiłku
                   await Meal.update(
                     {
+                      recipeId: meal.recipeId, // Dodajemy aktualizację recipeId
                       title: meal.title,
                       calories: meal.calories,
                       protein: meal.protein,
                       carbs: meal.carbs,
                       fat: meal.fat,
                       image: meal.image,
-                      recipeUrl: meal.recipeUrl, // Dodano recipeUrl
+                      recipeUrl: meal.recipeUrl,
+                      order: meal.order,
                     },
                     { where: { id: existingMeal.id } }
                   );
+                  updatedMealIds.push(existingMeal.id);
                 } else {
-                  await Meal.create({
+                  // Dodanie nowego posiłku, jeśli nie istnieje
+                  const newMeal = await Meal.create({
                     dayId: existingDay.id,
                     recipeId: meal.recipeId,
                     title: meal.title,
@@ -445,14 +482,34 @@ router.put('/diet-plans/:id', authenticateToken, async (req, res) => {
                     carbs: meal.carbs,
                     fat: meal.fat,
                     image: meal.image,
-                    recipeUrl: meal.recipeUrl, // Dodano recipeUrl
+                    recipeUrl: meal.recipeUrl,
+                    order: meal.order,
                   });
+                  updatedMealIds.push(newMeal.id);
                 }
+              }
+            }
+            
+            // Usuń posiłki, których nie ma w zaktualizowanym planie
+            for (const existingMeal of existingMeals) {
+              if (!updatedMealIds.includes(existingMeal.id)) {
+                await Meal.destroy({ where: { id: existingMeal.id } });
               }
             }
           }
         }
+        
+        // 4. Usuń dni, których nie ma w zaktualizowanym planie
+        for (const existingDay of existingDays) {
+          if (!updatedDayIds.includes(existingDay.id)) {
+            // Najpierw usuń wszystkie posiłki dla tego dnia
+            await Meal.destroy({ where: { dayId: existingDay.id } });
+            // Następnie usuń sam dzień diety
+            await DietDay.destroy({ where: { id: existingDay.id } });
+          }
+        }
 
+        // Pobierz zaktualizowany rekord z MySQL
         return await MySQLDietPlan.findByPk(mysqlId, {
           include: [{ model: DietDay, include: [Meal] }],
         });
