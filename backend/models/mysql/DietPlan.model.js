@@ -80,7 +80,7 @@ const Meal = sequelize.define('Meal', {
     allowNull: false,
   },
   recipeId: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.STRING,
     allowNull: false,
   },
   title: {
@@ -92,24 +92,24 @@ const Meal = sequelize.define('Meal', {
     allowNull: false,
   },
   protein: {
-    type: DataTypes.STRING,
+    type: DataTypes.FLOAT,
     allowNull: false,
   },
   carbs: {
-    type: DataTypes.STRING,
+    type: DataTypes.FLOAT,
     allowNull: false,
   },
   fat: {
-    type: DataTypes.STRING,
+    type: DataTypes.FLOAT,
     allowNull: false,
   },
   image: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
   },
   recipeUrl: {
     type: DataTypes.STRING,
-    allowNull: false, // Nowe pole na URL przepisu
+    allowNull: true, // Nowe pole na URL przepisu
   },
   order: {
     type: DataTypes.INTEGER,
