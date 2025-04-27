@@ -96,7 +96,8 @@ const TrainingDayForm = ({ day, onUpdate, onRemove }) => {
         // Zapisujemy wszystkie informacje o ćwiczeniu
         bodyPart: exercise.bodyPart,
         equipment: exercise.equipment,
-        target: exercise.target
+        target: exercise.target,
+        isCustom: exercise.isCustom || false // Dodajemy flagę isCustom
       };
       updatedExercises = [...dayData.exercises, newExercise];
     } else {
@@ -112,7 +113,8 @@ const TrainingDayForm = ({ day, onUpdate, onRemove }) => {
         // Aktualizujemy również dane o ćwiczeniu
         bodyPart: exercise.bodyPart,
         equipment: exercise.equipment,
-        target: exercise.target
+        target: exercise.target,
+        isCustom: exercise.isCustom || false // Dodajemy flagę isCustom
       };
     }
 
