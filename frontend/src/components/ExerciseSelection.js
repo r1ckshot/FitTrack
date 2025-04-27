@@ -11,12 +11,22 @@ import {
   Chip,
   IconButton,
   TextField,
-  InputAdornment
+  InputAdornment,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormHelperText
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import {
   getAllExercises,
   getBodyParts,
@@ -38,6 +48,19 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel, currentExercise }) => {
   const [selectedBodyPart, setSelectedBodyPart] = useState('');
   const [selectedEquipment, setSelectedEquipment] = useState('');
   const [selectedTarget, setSelectedTarget] = useState('');
+
+  // Custom exercise dialog state
+  const [customExerciseDialogOpen, setCustomExerciseDialogOpen] = useState(false);
+  const [customExercise, setCustomExercise] = useState({
+    id: '',
+    name: '',
+    bodyPart: '',
+    target: '',
+    equipment: '',
+    gifUrl: '',
+    isCustom: true
+  });
+  const [formErrors, setFormErrors] = useState({});
 
   // Fetch all data initially in one request
   useEffect(() => {
@@ -70,10 +93,29 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel, currentExercise }) => {
   // Ustawienie filtrów na podstawie edytowanego ćwiczenia
   useEffect(() => {
     if (!loading && currentExercise) {
-      setSelectedBodyPart(currentExercise.bodyPart);
-      setSelectedEquipment(currentExercise.equipment);
-      setSelectedTarget(currentExercise.target);
-      setStep(4);
+      // Sprawdź, czy to własne ćwiczenie na podstawie flagi isCustom lub exerciseId
+      if (currentExercise.isCustom || currentExercise.exerciseId?.startsWith('custom-')) {
+        // Jeśli to własne ćwiczenie, otwórz dialog edycji
+        setCustomExercise({
+          id: currentExercise.exerciseId,
+          name: currentExercise.exerciseName,
+          bodyPart: currentExercise.bodyPart || '',
+          target: currentExercise.target || '',
+          equipment: currentExercise.equipment || '',
+          gifUrl: currentExercise.gifUrl || '',
+          isCustom: true
+        });
+        // Dodaj setTimeout, aby zapewnić poprawne renderowanie dialogu
+        setTimeout(() => {
+          setCustomExerciseDialogOpen(true);
+        }, 100);
+      } else {
+        // Standardowa logika dla predefiniowanych ćwiczeń
+        setSelectedBodyPart(currentExercise.bodyPart);
+        setSelectedEquipment(currentExercise.equipment);
+        setSelectedTarget(currentExercise.target);
+        setStep(4);
+      }
     }
   }, [loading, currentExercise]);
 
@@ -169,6 +211,66 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel, currentExercise }) => {
     setStep(1);
   };
 
+  // Open custom exercise dialog
+  const handleOpenCustomExerciseDialog = () => {
+    setCustomExercise({
+      id: `custom-${Date.now()}`,
+      name: '',
+      bodyPart: '',
+      target: '',
+      equipment: '',
+      gifUrl: '',
+      isCustom: true
+    });
+    setFormErrors({});
+    setCustomExerciseDialogOpen(true);
+  };
+
+  // Handle changes in custom exercise form
+  const handleCustomExerciseChange = (e) => {
+    const { name, value } = e.target;
+    setCustomExercise(prev => ({
+      ...prev,
+      [name]: value
+    }));
+
+    // Clear error for this field if it exists
+    if (formErrors[name]) {
+      setFormErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  // Validate and save custom exercise
+  const handleSaveCustomExercise = () => {
+    // Validate required fields
+    const errors = {};
+    if (!customExercise.name.trim()) errors.name = 'Nazwa jest wymagana';
+    if (!customExercise.bodyPart) errors.bodyPart = 'Partia ciała jest wymagana';
+    if (!customExercise.target) errors.target = 'Cel treningowy jest wymagany';
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
+    // Create exercise object in the format expected by onExerciseSelect
+    const exercise = {
+      id: customExercise.id,
+      name: customExercise.name,
+      bodyPart: customExercise.bodyPart,
+      target: customExercise.target,
+      equipment: customExercise.equipment || 'brak sprzętu',
+      gifUrl: customExercise.gifUrl || '',
+      isCustom: true
+    };
+
+    onExerciseSelect(exercise);
+    setCustomExerciseDialogOpen(false);
+  };
+
   // Loading indicator
   if (loading && step === 1) {
     return (
@@ -183,6 +285,25 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel, currentExercise }) => {
       <Typography variant="h6" align="center" gutterBottom component={motion.div} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         Wybierz ćwiczenie
       </Typography>
+
+      {/* Custom Exercise Button */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+        <Button
+          variant="outlined"
+          startIcon={<AddCircleOutlineIcon />}
+          onClick={handleOpenCustomExerciseDialog}
+          sx={{
+            color: '#4CAF50',
+            borderColor: '#4CAF50',
+            '&:hover': {
+              borderColor: '#3b8a3e',
+              backgroundColor: 'rgba(76,175,80,0.1)'
+            }
+          }}
+        >
+          Dodaj własne ćwiczenie
+        </Button>
+      </Box>
 
       {/* Current selections display */}
       {(selectedBodyPart || selectedEquipment || selectedTarget) && (
@@ -448,6 +569,101 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel, currentExercise }) => {
           )}
         </Box>
       )}
+
+      {/* Custom Exercise Dialog */}
+      <Dialog open={customExerciseDialogOpen} onClose={() => setCustomExerciseDialogOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle>
+          {currentExercise && currentExercise.isCustom ? 'Edytuj własne ćwiczenie' : 'Dodaj własne ćwiczenie'}
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            <TextField
+              fullWidth
+              label="Nazwa ćwiczenia"
+              name="name"
+              value={customExercise.name}
+              onChange={handleCustomExerciseChange}
+              error={!!formErrors.name}
+              helperText={formErrors.name}
+              required
+            />
+
+            <FormControl fullWidth required error={!!formErrors.bodyPart}>
+              <InputLabel id="bodyPart-label">Partia ciała</InputLabel>
+              <Select
+                labelId="bodyPart-label"
+                name="bodyPart"
+                value={customExercise.bodyPart}
+                label="Partia ciała"
+                onChange={handleCustomExerciseChange}
+              >
+                {bodyParts.map(part => (
+                  <MenuItem key={part} value={part}>{part}</MenuItem>
+                ))}
+              </Select>
+              {formErrors.bodyPart && <FormHelperText>{formErrors.bodyPart}</FormHelperText>}
+            </FormControl>
+
+            <FormControl fullWidth required error={!!formErrors.target}>
+              <InputLabel id="target-label">Cel treningowy</InputLabel>
+              <Select
+                labelId="target-label"
+                name="target"
+                value={customExercise.target}
+                label="Cel treningowy"
+                onChange={handleCustomExerciseChange}
+              >
+                {targets.filter(target => !customExercise.bodyPart ||
+                  allExercises.some(ex => ex.bodyPart === customExercise.bodyPart && ex.target === target))
+                  .map(target => (
+                    <MenuItem key={target} value={target}>{target}</MenuItem>
+                  ))}
+              </Select>
+              {formErrors.target && <FormHelperText>{formErrors.target}</FormHelperText>}
+            </FormControl>
+
+            <FormControl fullWidth>
+              <InputLabel id="equipment-label">Sprzęt (opcjonalnie)</InputLabel>
+              <Select
+                labelId="equipment-label"
+                name="equipment"
+                value={customExercise.equipment}
+                label="Sprzęt (opcjonalnie)"
+                onChange={handleCustomExerciseChange}
+              >
+                <MenuItem value="">Brak sprzętu</MenuItem>
+                {equipment.map(item => (
+                  <MenuItem key={item} value={item}>{item}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <TextField
+              fullWidth
+              label="URL do animacji (opcjonalnie)"
+              name="gifUrl"
+              value={customExercise.gifUrl}
+              onChange={handleCustomExerciseChange}
+              placeholder="np. https://link-do-animacji.gif"
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setCustomExerciseDialogOpen(false)}
+            color="inherit"
+          >
+            Anuluj
+          </Button>
+          <Button
+            onClick={handleSaveCustomExercise}
+            variant="contained"
+            sx={{ backgroundColor: '#4CAF50', '&:hover': { backgroundColor: '#3b8a3e' } }}
+          >
+            Zapisz
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
