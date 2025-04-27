@@ -4,14 +4,14 @@ const { Schema } = mongoose;
 
 // Schema for a single Meal
 const MealSchema = new Schema({
-  recipeId: { type: Number, required: true }, // ID przepisu z API Spoonacular
+  recipeId: { type: String, required: true }, // ID przepisu z API Spoonacular
   title: { type: String, required: true }, // Tytuł przepisu
   calories: { type: Number, required: true }, // Kalorie
-  protein: { type: String, required: true }, // Białko (np. "10g")
-  carbs: { type: String, required: true }, // Węglowodany (np. "20g")
-  fat: { type: String, required: true }, // Tłuszcze (np. "5g")
-  image: { type: String, required: true }, // URL obrazka przepisu
-  recipeUrl: { type: String, required: true }, // URL do przepisu
+  protein: { type: Number, required: true }, // Białko (np. "10g")
+  carbs: { type: Number, required: true }, // Węglowodany (np. "20g")
+  fat: { type: Number, required: true }, // Tłuszcze (np. "5g")
+  image: { type: String, default: null }, // URL obrazka przepisu
+  recipeUrl: { type: String, default: null }, // URL do przepisu
   order: { type: Number, required: true },
 });
 
