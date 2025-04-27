@@ -87,11 +87,14 @@ const DietPlanForm = ({ plan, onClose }) => {
   const validateDaysAndMeals = (days) => {
     for (const day of days) {
       if (!day.dayOfWeek || !day.name || typeof day.order !== 'number') {
+        console.log('Nieprawidłowe dane dnia:', day);
         return false;
       }
       if (day.meals?.length > 0) {
         for (const meal of day.meals) {
-          if (!meal.recipeId || !meal.title || typeof meal.calories !== 'number') {
+          if (!meal.recipeId || !meal.title || 
+              (typeof meal.calories !== 'number' && isNaN(parseFloat(meal.calories)))) {
+            console.log('Nieprawidłowe dane posiłku:', meal);
             return false;
           }
         }

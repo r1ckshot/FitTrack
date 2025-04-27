@@ -93,6 +93,7 @@ const DietDayForm = ({ day, onUpdate, onRemove }) => {
         image: meal.image,
         recipeUrl: meal.recipeUrl,
         order: dayData.meals.length + 1,
+        isCustom: meal.isCustom || false // Dodajemy flagę isCustom
       };
       updatedMeals = [...dayData.meals, newMeal];
     } else {
@@ -107,7 +108,8 @@ const DietDayForm = ({ day, onUpdate, onRemove }) => {
         fat: meal.fat,
         image: meal.image,
         recipeUrl: meal.recipeUrl,
-        order: updatedMeals[editMealIndex].order, // Keep the same order
+        order: updatedMeals[editMealIndex].order, 
+        isCustom: meal.isCustom || false // Dodajemy flagę isCustom
       };
     }
   
