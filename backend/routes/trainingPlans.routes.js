@@ -2,6 +2,7 @@ const express = require('express');
 const MongoTrainingPlan = require('../models/mongo/TrainingPlan.model');
 const MySQLModels = require('../models/mysql/TrainingPlan.model');
 const { authenticateToken } = require('../middlewares/auth.middleware');
+const { sequelize } = require('../config/mysql.config'); // Import sequelize instance
 
 const router = express.Router();
 const { TrainingPlan: MySQLTrainingPlan, TrainingDay, TrainingExercise } = MySQLModels;
@@ -30,12 +31,26 @@ async function safeMongoOperation(operation, fallback = null) {
 }
 
 // Bezpieczna operacja MySQL - ignoruje błędy połączenia gdy baza jest niedostępna
+// Teraz z obsługą transakcji
 async function safeMySQLOperation(operation, fallback = null) {
   if (databaseType !== 'mysql' && databaseType !== 'both') return fallback;
 
+  let transaction;
+
   try {
-    return await operation();
+    // Rozpocznij transakcję
+    transaction = await sequelize.transaction();
+
+    // Wykonaj operację w kontekście transakcji
+    const result = await operation(transaction);
+
+    // Zatwierdź transakcję
+    await transaction.commit();
+
+    return result;
   } catch (error) {
+    // Wycofaj transakcję w przypadku błędu
+    if (transaction) await transaction.rollback();
     console.log('MySQL operation failed:', error.message);
     return fallback;
   }
@@ -88,9 +103,9 @@ router.post('/training-plans', authenticateToken, async (req, res) => {
       });
     }
 
-    // MySQL - operacja
+    // MySQL - operacja z transakcją
     if (databaseType === 'mysql' || databaseType === 'both') {
-      createdPlanMySQL = await safeMySQLOperation(async () => {
+      createdPlanMySQL = await safeMySQLOperation(async (transaction) => {
         // Tworzenie planu
         const plan = await MySQLTrainingPlan.create({
           userId: mysqlUserId,
@@ -99,7 +114,7 @@ router.post('/training-plans', authenticateToken, async (req, res) => {
           isActive: isActive,
           dateCreated: new Date(),
           dateUpdated: new Date(),
-        });
+        }, { transaction });
 
         mysqlPlanId = plan.id;
 
@@ -111,7 +126,7 @@ router.post('/training-plans', authenticateToken, async (req, res) => {
               dayOfWeek: day.dayOfWeek,
               name: day.name,
               order: day.order,
-            });
+            }, { transaction });
 
             if (day.exercises && day.exercises.length > 0) {
               for (const exercise of day.exercises) {
@@ -128,7 +143,7 @@ router.post('/training-plans', authenticateToken, async (req, res) => {
                   bodyPart: exercise.bodyPart,
                   equipment: exercise.equipment,
                   target: exercise.target,
-                });
+                }, { transaction });
               }
             }
           }
@@ -136,7 +151,8 @@ router.post('/training-plans', authenticateToken, async (req, res) => {
 
         // Pobieranie utworzonego planu z relacjami
         return await MySQLTrainingPlan.findByPk(plan.id, {
-          include: [{ model: TrainingDay, include: [TrainingExercise] }]
+          include: [{ model: TrainingDay, include: [TrainingExercise] }],
+          transaction
         });
       });
     }
@@ -186,19 +202,20 @@ router.get('/training-plans', authenticateToken, async (req, res) => {
       }, []);
     }
 
-    // Pobierz dane z MySQL
+    // Pobierz dane z MySQL (read operations also benefit from transactions)
     if (databaseType === 'mysql' || databaseType === 'both') {
-      const rawMysqlPlans = await safeMySQLOperation(async () => {
+      const rawMysqlPlans = await safeMySQLOperation(async (transaction) => {
         return await MySQLTrainingPlan.findAll({
           where: { userId: mysqlUserId },
           include: [{
             model: TrainingDay,
-            include: [ TrainingExercise ]
+            include: [TrainingExercise]
           }],
           order: [
-            [ TrainingDay, 'order', 'ASC' ],
-            [ TrainingDay, TrainingExercise, 'order', 'ASC' ]
-          ]
+            [TrainingDay, 'order', 'ASC'],
+            [TrainingDay, TrainingExercise, 'order', 'ASC']
+          ],
+          transaction
         });
       }, []);
 
@@ -275,10 +292,11 @@ router.get('/training-plans/:id', authenticateToken, async (req, res) => {
 
       if (mongoPlan && databaseType === 'both') {
         // Próba znalezienia odpowiadającego planu w MySQL
-        const matchingMysqlPlans = await safeMySQLOperation(async () => {
+        const matchingMysqlPlans = await safeMySQLOperation(async (transaction) => {
           return await MySQLTrainingPlan.findAll({
             where: { name: mongoPlan.name },
             include: [{ model: TrainingDay, include: [TrainingExercise] }],
+            transaction
           });
         }, []);
 
@@ -294,9 +312,10 @@ router.get('/training-plans/:id', authenticateToken, async (req, res) => {
     }
     // Sprawdź, czy planId to liczba (MySQL)
     else if (!isNaN(parseInt(planId, 10)) && (databaseType === 'mysql' || databaseType === 'both')) {
-      mysqlPlan = await safeMySQLOperation(async () => {
+      mysqlPlan = await safeMySQLOperation(async (transaction) => {
         return await MySQLTrainingPlan.findByPk(parseInt(planId, 10), {
-          include: [{ model: TrainingDay, include: [TrainingExercise] }]
+          include: [{ model: TrainingDay, include: [TrainingExercise] }],
+          transaction
         });
       });
 
@@ -369,8 +388,11 @@ router.put('/training-plans/:id', authenticateToken, async (req, res) => {
         });
 
         if (mongoPlan) {
-          const mysqlPlans = await safeMySQLOperation(async () => {
-            return await MySQLTrainingPlan.findAll({ where: { name: mongoPlan.name } });
+          const mysqlPlans = await safeMySQLOperation(async (transaction) => {
+            return await MySQLTrainingPlan.findAll({
+              where: { name: mongoPlan.name },
+              transaction
+            });
           }, []);
 
           if (mysqlPlans && mysqlPlans.length > 0) {
@@ -384,8 +406,8 @@ router.put('/training-plans/:id', authenticateToken, async (req, res) => {
 
       // Tylko jeśli używamy obu baz danych, spróbuj znaleźć odpowiadający rekord w MongoDB
       if (databaseType === 'both' && !isNaN(mysqlId)) {
-        const mysqlPlan = await safeMySQLOperation(async () => {
-          return await MySQLTrainingPlan.findByPk(mysqlId);
+        const mysqlPlan = await safeMySQLOperation(async (transaction) => {
+          return await MySQLTrainingPlan.findByPk(mysqlId, { transaction });
         });
 
         if (mysqlPlan) {
@@ -413,17 +435,21 @@ router.put('/training-plans/:id', authenticateToken, async (req, res) => {
 
     // MySQL - aktualizacja planu i powiązanych danych jeśli dostępny
     if ((databaseType === 'mysql' || databaseType === 'both') && mysqlId && !isNaN(mysqlId)) {
-      updatedMySQL = await safeMySQLOperation(async () => {
+      updatedMySQL = await safeMySQLOperation(async (transaction) => {
         // 1. Aktualizacja głównego rekordu planu
         await MySQLTrainingPlan.update(
           { name, description, isActive, dateUpdated: new Date() },
-          { where: { id: mysqlId } }
+          {
+            where: { id: mysqlId },
+            transaction
+          }
         );
 
         // 2. Pobierz wszystkie istniejące dni treningowe dla tego planu
         const existingDays = await TrainingDay.findAll({
           where: { planId: mysqlId },
-          include: [TrainingExercise]
+          include: [TrainingExercise],
+          transaction
         });
 
         // Tablica do śledzenia dni, które zostaną zachowane
@@ -438,7 +464,10 @@ router.put('/training-plans/:id', authenticateToken, async (req, res) => {
               // Aktualizacja istniejącego dnia
               await TrainingDay.update(
                 { dayOfWeek: day.dayOfWeek, name: day.name },
-                { where: { id: existingDay.id } }
+                {
+                  where: { id: existingDay.id },
+                  transaction
+                }
               );
               updatedDayIds.push(existingDay.id);
             } else {
@@ -448,7 +477,7 @@ router.put('/training-plans/:id', authenticateToken, async (req, res) => {
                 dayOfWeek: day.dayOfWeek,
                 name: day.name,
                 order: day.order,
-              });
+              }, { transaction });
               updatedDayIds.push(newDay.id);
               existingDay = newDay;
             }
@@ -482,7 +511,10 @@ router.put('/training-plans/:id', authenticateToken, async (req, res) => {
                       equipment: exercise.equipment,
                       target: exercise.target,
                     },
-                    { where: { id: existingExercise.id } }
+                    {
+                      where: { id: existingExercise.id },
+                      transaction
+                    }
                   );
                   updatedExerciseIds.push(existingExercise.id);
                 } else {
@@ -500,7 +532,7 @@ router.put('/training-plans/:id', authenticateToken, async (req, res) => {
                     bodyPart: exercise.bodyPart,
                     equipment: exercise.equipment,
                     target: exercise.target,
-                  });
+                  }, { transaction });
                   updatedExerciseIds.push(newExercise.id);
                 }
               }
@@ -509,7 +541,10 @@ router.put('/training-plans/:id', authenticateToken, async (req, res) => {
             // Usuń ćwiczenia, których nie ma w zaktualizowanym planie
             for (const existingExercise of existingExercises) {
               if (!updatedExerciseIds.includes(existingExercise.id)) {
-                await TrainingExercise.destroy({ where: { id: existingExercise.id } });
+                await TrainingExercise.destroy({
+                  where: { id: existingExercise.id },
+                  transaction
+                });
               }
             }
           }
@@ -519,15 +554,22 @@ router.put('/training-plans/:id', authenticateToken, async (req, res) => {
         for (const existingDay of existingDays) {
           if (!updatedDayIds.includes(existingDay.id)) {
             // Najpierw usuń wszystkie ćwiczenia dla tego dnia
-            await TrainingExercise.destroy({ where: { dayId: existingDay.id } });
+            await TrainingExercise.destroy({
+              where: { dayId: existingDay.id },
+              transaction
+            });
             // Następnie usuń sam dzień treningowy
-            await TrainingDay.destroy({ where: { id: existingDay.id } });
+            await TrainingDay.destroy({
+              where: { id: existingDay.id },
+              transaction
+            });
           }
         }
 
         // Pobierz zaktualizowany rekord z MySQL
         return await MySQLTrainingPlan.findByPk(mysqlId, {
           include: [{ model: TrainingDay, include: [TrainingExercise] }],
+          transaction
         });
       });
     }
@@ -564,27 +606,27 @@ router.put('/training-plans/:id', authenticateToken, async (req, res) => {
 // Usuwanie planu treningowego
 router.delete('/training-plans/:id', authenticateToken, async (req, res) => {
   const planId = req.params.id;
-
+  
   try {
     let isMongoDeleted = false;
     let isMySQLDeleted = false;
     let mongoId = null;
     let mysqlId = null;
 
-    // Identyfikacja ID dla odpowiednich baz
     if (/^[0-9a-fA-F]{24}$/.test(planId)) {
-      // MongoDB ObjectID
       mongoId = planId;
 
-      // Spróbuj znaleźć odpowiadający rekord w MySQL tylko jeśli używamy obu baz
       if (databaseType === 'both') {
         const mongoPlan = await safeMongoOperation(async () => {
           return await MongoTrainingPlan.findById(mongoId);
         });
 
         if (mongoPlan) {
-          const mysqlPlans = await safeMySQLOperation(async () => {
-            return await MySQLTrainingPlan.findAll({ where: { name: mongoPlan.name } });
+          const mysqlPlans = await safeMySQLOperation(async (transaction) => {
+            return await MySQLTrainingPlan.findAll({
+              where: { name: mongoPlan.name },
+              transaction
+            });
           }, []);
 
           if (mysqlPlans && mysqlPlans.length > 0) {
@@ -593,13 +635,11 @@ router.delete('/training-plans/:id', authenticateToken, async (req, res) => {
         }
       }
     } else {
-      // MySQL ID
       mysqlId = parseInt(planId, 10);
 
-      // Spróbuj znaleźć odpowiadający rekord w MongoDB tylko jeśli używamy obu baz
       if (databaseType === 'both' && !isNaN(mysqlId)) {
-        const mysqlPlan = await safeMySQLOperation(async () => {
-          return await MySQLTrainingPlan.findByPk(mysqlId);
+        const mysqlPlan = await safeMySQLOperation(async (transaction) => {
+          return await MySQLTrainingPlan.findByPk(mysqlId, { transaction });
         });
 
         if (mysqlPlan) {
@@ -614,7 +654,6 @@ router.delete('/training-plans/:id', authenticateToken, async (req, res) => {
       }
     }
 
-    // MongoDB - usunięcie planu
     if ((databaseType === 'mongo' || databaseType === 'both') && mongoId) {
       const deletedPlan = await safeMongoOperation(async () => {
         return await MongoTrainingPlan.findByIdAndDelete(mongoId);
@@ -622,10 +661,34 @@ router.delete('/training-plans/:id', authenticateToken, async (req, res) => {
       isMongoDeleted = !!deletedPlan;
     }
 
-    // MySQL - usunięcie planu (kaskadowo usunie też dni i ćwiczenia)
     if ((databaseType === 'mysql' || databaseType === 'both') && mysqlId && !isNaN(mysqlId)) {
-      const deletedRows = await safeMySQLOperation(async () => {
-        return await MySQLTrainingPlan.destroy({ where: { id: mysqlId } });
+      const deletedRows = await safeMySQLOperation(async (transaction) => {
+        // W MySQL trzeba dodatkowo usunąć powiązane ćwiczenia i dni
+        // Znajdź wszystkie dni dla tego planu
+        const days = await TrainingDay.findAll({
+          where: { planId: mysqlId },
+          transaction
+        });
+
+        // Usuń wszystkie ćwiczenia
+        for (const day of days) {
+          await TrainingExercise.destroy({
+            where: { dayId: day.id },
+            transaction
+          });
+        }
+
+        // Usuń wszystkie dni
+        await TrainingDay.destroy({
+          where: { planId: mysqlId },
+          transaction
+        });
+
+        // Usuń plan treningu
+        return await MySQLTrainingPlan.destroy({
+          where: { id: mysqlId },
+          transaction
+        });
       }, 0);
       isMySQLDeleted = deletedRows > 0;
     }
