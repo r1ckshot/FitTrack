@@ -2,6 +2,7 @@ const express = require('express');
 const MongoDietPlan = require('../models/mongo/DietPlan.model');
 const MySQLModels = require('../models/mysql/DietPlan.model');
 const { authenticateToken } = require('../middlewares/auth.middleware');
+const { sequelize } = require('../config/mysql.config'); // Import the sequelize instance
 
 const router = express.Router();
 const { DietPlan: MySQLDietPlan, DietDay, Meal } = MySQLModels;
@@ -30,12 +31,22 @@ async function safeMongoOperation(operation, fallback = null) {
 }
 
 // Bezpieczna operacja MySQL - ignoruje błędy połączenia gdy baza jest niedostępna
+// Teraz z obsługą transakcji
 async function safeMySQLOperation(operation, fallback = null) {
   if (databaseType !== 'mysql' && databaseType !== 'both') return fallback;
 
+  // Rozpocznij transakcję
+  const transaction = await sequelize.transaction();
+  
   try {
-    return await operation();
+    // Wykonaj operację w kontekście transakcji
+    const result = await operation(transaction);
+    // Zatwierdź transakcję
+    await transaction.commit();
+    return result;
   } catch (error) {
+    // Wycofaj transakcję w przypadku błędu
+    await transaction.rollback();
     console.log('MySQL operation failed:', error.message);
     return fallback;
   }
@@ -88,9 +99,9 @@ router.post('/diet-plans', authenticateToken, async (req, res) => {
       });
     }
 
-    // MySQL - operacja
+    // MySQL - operacja z transakcją
     if (databaseType === 'mysql' || databaseType === 'both') {
-      createdPlanMySQL = await safeMySQLOperation(async () => {
+      createdPlanMySQL = await safeMySQLOperation(async (transaction) => {
         const plan = await MySQLDietPlan.create({
           userId: mysqlUserId,
           name,
@@ -98,7 +109,7 @@ router.post('/diet-plans', authenticateToken, async (req, res) => {
           isActive: isActive,
           dateCreated: new Date(),
           dateUpdated: new Date(),
-        });
+        }, { transaction });
 
         mysqlPlanId = plan.id;
 
@@ -110,7 +121,7 @@ router.post('/diet-plans', authenticateToken, async (req, res) => {
               dayOfWeek: day.dayOfWeek,
               name: day.name,
               order: day.order,
-            });
+            }, { transaction });
 
             if (day.meals && day.meals.length > 0) {
               for (const meal of day.meals) {
@@ -125,7 +136,7 @@ router.post('/diet-plans', authenticateToken, async (req, res) => {
                   image: meal.image,
                   recipeUrl: meal.recipeUrl, 
                   order: meal.order,
-                });
+                }, { transaction });
               }
             }
           }
@@ -133,6 +144,7 @@ router.post('/diet-plans', authenticateToken, async (req, res) => {
 
         return await MySQLDietPlan.findByPk(plan.id, {
           include: [{ model: DietDay, include: [Meal] }],
+          transaction
         });
       });
     }
@@ -180,9 +192,9 @@ router.get('/diet-plans', authenticateToken, async (req, res) => {
       }, []);
     }
 
-    // Pobierz dane z MySQL
+    // Pobierz dane z MySQL z transakcją
     if (databaseType === 'mysql' || databaseType === 'both') {
-      const rawMysqlPlans = await safeMySQLOperation(async () => {
+      const rawMysqlPlans = await safeMySQLOperation(async (transaction) => {
         return await MySQLDietPlan.findAll({
           where: { userId: mysqlUserId },
           include: [{
@@ -192,7 +204,8 @@ router.get('/diet-plans', authenticateToken, async (req, res) => {
           order: [
             [ DietDay, 'order', 'ASC' ],            
             [ DietDay, Meal,   'order', 'ASC' ]     
-          ]
+          ],
+          transaction
         });
       }, []);
 
@@ -267,11 +280,12 @@ router.get('/diet-plans/:id', authenticateToken, async (req, res) => {
       });
 
       if (mongoPlan && databaseType === 'both') {
-        // Próba znalezienia odpowiadającego planu w MySQL
-        const matchingMysqlPlans = await safeMySQLOperation(async () => {
+        // Próba znalezienia odpowiadającego planu w MySQL - z transakcją
+        const matchingMysqlPlans = await safeMySQLOperation(async (transaction) => {
           return await MySQLDietPlan.findAll({
             where: { name: mongoPlan.name },
             include: [{ model: DietDay, include: [Meal] }],
+            transaction
           });
         }, []);
 
@@ -287,9 +301,10 @@ router.get('/diet-plans/:id', authenticateToken, async (req, res) => {
     }
     // Sprawdź, czy planId to liczba (MySQL)
     else if (!isNaN(parseInt(planId, 10)) && (databaseType === 'mysql' || databaseType === 'both')) {
-      mysqlPlan = await safeMySQLOperation(async () => {
+      mysqlPlan = await safeMySQLOperation(async (transaction) => {
         return await MySQLDietPlan.findByPk(parseInt(planId, 10), {
           include: [{ model: DietDay, include: [Meal] }],
+          transaction
         });
       });
 
@@ -360,8 +375,11 @@ router.put('/diet-plans/:id', authenticateToken, async (req, res) => {
         });
 
         if (mongoPlan) {
-          const mysqlPlans = await safeMySQLOperation(async () => {
-            return await MySQLDietPlan.findAll({ where: { name: mongoPlan.name } });
+          const mysqlPlans = await safeMySQLOperation(async (transaction) => {
+            return await MySQLDietPlan.findAll({ 
+              where: { name: mongoPlan.name },
+              transaction 
+            });
           }, []);
 
           if (mysqlPlans && mysqlPlans.length > 0) {
@@ -373,8 +391,8 @@ router.put('/diet-plans/:id', authenticateToken, async (req, res) => {
       mysqlId = parseInt(planId, 10);
 
       if (databaseType === 'both' && !isNaN(mysqlId)) {
-        const mysqlPlan = await safeMySQLOperation(async () => {
-          return await MySQLDietPlan.findByPk(mysqlId);
+        const mysqlPlan = await safeMySQLOperation(async (transaction) => {
+          return await MySQLDietPlan.findByPk(mysqlId, { transaction });
         });
 
         if (mysqlPlan) {
@@ -400,17 +418,18 @@ router.put('/diet-plans/:id', authenticateToken, async (req, res) => {
     }
 
     if ((databaseType === 'mysql' || databaseType === 'both') && mysqlId && !isNaN(mysqlId)) {
-      updatedMySQL = await safeMySQLOperation(async () => {
+      updatedMySQL = await safeMySQLOperation(async (transaction) => {
         // 1. Aktualizacja głównego rekordu planu
         await MySQLDietPlan.update(
           { name, description, isActive, dateUpdated: new Date() },
-          { where: { id: mysqlId } }
+          { where: { id: mysqlId }, transaction }
         );
 
         // 2. Pobierz wszystkie istniejące dni diety dla tego planu
         const existingDays = await DietDay.findAll({
           where: { planId: mysqlId },
-          include: [Meal]
+          include: [Meal],
+          transaction
         });
         
         // Tablica do śledzenia dni, które zostaną zachowane
@@ -425,7 +444,7 @@ router.put('/diet-plans/:id', authenticateToken, async (req, res) => {
               // Aktualizacja istniejącego dnia
               await DietDay.update(
                 { dayOfWeek: day.dayOfWeek, name: day.name },
-                { where: { id: existingDay.id } }
+                { where: { id: existingDay.id }, transaction }
               );
               updatedDayIds.push(existingDay.id);
             } else {
@@ -435,7 +454,7 @@ router.put('/diet-plans/:id', authenticateToken, async (req, res) => {
                 dayOfWeek: day.dayOfWeek,
                 name: day.name,
                 order: day.order,
-              });
+              }, { transaction });
               updatedDayIds.push(newDay.id);
               existingDay = newDay;
             }
@@ -449,16 +468,15 @@ router.put('/diet-plans/:id', authenticateToken, async (req, res) => {
             // Obsługa posiłków dla dnia
             if (day.meals && Array.isArray(day.meals)) {
               for (const meal of day.meals) {
-
                 let existingMeal = meal.id
-                ? existingMeals.find(m => m.id === meal.id)
-                : existingMeals.find(m => m.order === meal.order);
+                  ? existingMeals.find(m => m.id === meal.id)
+                  : existingMeals.find(m => m.order === meal.order);
 
                 if (existingMeal) {
                   // Aktualizacja istniejącego posiłku
                   await Meal.update(
                     {
-                      recipeId: meal.recipeId, // Dodajemy aktualizację recipeId
+                      recipeId: meal.recipeId,
                       title: meal.title,
                       calories: meal.calories,
                       protein: meal.protein,
@@ -468,7 +486,7 @@ router.put('/diet-plans/:id', authenticateToken, async (req, res) => {
                       recipeUrl: meal.recipeUrl,
                       order: meal.order,
                     },
-                    { where: { id: existingMeal.id } }
+                    { where: { id: existingMeal.id }, transaction }
                   );
                   updatedMealIds.push(existingMeal.id);
                 } else {
@@ -484,7 +502,7 @@ router.put('/diet-plans/:id', authenticateToken, async (req, res) => {
                     image: meal.image,
                     recipeUrl: meal.recipeUrl,
                     order: meal.order,
-                  });
+                  }, { transaction });
                   updatedMealIds.push(newMeal.id);
                 }
               }
@@ -493,7 +511,10 @@ router.put('/diet-plans/:id', authenticateToken, async (req, res) => {
             // Usuń posiłki, których nie ma w zaktualizowanym planie
             for (const existingMeal of existingMeals) {
               if (!updatedMealIds.includes(existingMeal.id)) {
-                await Meal.destroy({ where: { id: existingMeal.id } });
+                await Meal.destroy({ 
+                  where: { id: existingMeal.id },
+                  transaction 
+                });
               }
             }
           }
@@ -503,15 +524,22 @@ router.put('/diet-plans/:id', authenticateToken, async (req, res) => {
         for (const existingDay of existingDays) {
           if (!updatedDayIds.includes(existingDay.id)) {
             // Najpierw usuń wszystkie posiłki dla tego dnia
-            await Meal.destroy({ where: { dayId: existingDay.id } });
+            await Meal.destroy({ 
+              where: { dayId: existingDay.id },
+              transaction 
+            });
             // Następnie usuń sam dzień diety
-            await DietDay.destroy({ where: { id: existingDay.id } });
+            await DietDay.destroy({ 
+              where: { id: existingDay.id },
+              transaction 
+            });
           }
         }
 
         // Pobierz zaktualizowany rekord z MySQL
         return await MySQLDietPlan.findByPk(mysqlId, {
           include: [{ model: DietDay, include: [Meal] }],
+          transaction
         });
       });
     }
@@ -563,8 +591,11 @@ router.delete('/diet-plans/:id', authenticateToken, async (req, res) => {
         });
 
         if (mongoPlan) {
-          const mysqlPlans = await safeMySQLOperation(async () => {
-            return await MySQLDietPlan.findAll({ where: { name: mongoPlan.name } });
+          const mysqlPlans = await safeMySQLOperation(async (transaction) => {
+            return await MySQLDietPlan.findAll({ 
+              where: { name: mongoPlan.name },
+              transaction 
+            });
           }, []);
 
           if (mysqlPlans && mysqlPlans.length > 0) {
@@ -576,8 +607,8 @@ router.delete('/diet-plans/:id', authenticateToken, async (req, res) => {
       mysqlId = parseInt(planId, 10);
 
       if (databaseType === 'both' && !isNaN(mysqlId)) {
-        const mysqlPlan = await safeMySQLOperation(async () => {
-          return await MySQLDietPlan.findByPk(mysqlId);
+        const mysqlPlan = await safeMySQLOperation(async (transaction) => {
+          return await MySQLDietPlan.findByPk(mysqlId, { transaction });
         });
 
         if (mysqlPlan) {
@@ -591,7 +622,7 @@ router.delete('/diet-plans/:id', authenticateToken, async (req, res) => {
         }
       }
     }
-
+        
     if ((databaseType === 'mongo' || databaseType === 'both') && mongoId) {
       const deletedPlan = await safeMongoOperation(async () => {
         return await MongoDietPlan.findByIdAndDelete(mongoId);
@@ -600,8 +631,33 @@ router.delete('/diet-plans/:id', authenticateToken, async (req, res) => {
     }
 
     if ((databaseType === 'mysql' || databaseType === 'both') && mysqlId && !isNaN(mysqlId)) {
-      const deletedRows = await safeMySQLOperation(async () => {
-        return await MySQLDietPlan.destroy({ where: { id: mysqlId } });
+      const deletedRows = await safeMySQLOperation(async (transaction) => {
+        // W MySQL trzeba dodatkowo usunąć powiązane posiłki i dni
+        // Znajdź wszystkie dni dla tego planu
+        const days = await DietDay.findAll({
+          where: { planId: mysqlId },
+          transaction
+        });
+        
+        // Usuń wszystkie posiłki
+        for (const day of days) {
+          await Meal.destroy({
+            where: { dayId: day.id },
+            transaction
+          });
+        }
+        
+        // Usuń wszystkie dni
+        await DietDay.destroy({
+          where: { planId: mysqlId },
+          transaction
+        });
+        
+        // Usuń plan diety
+        return await MySQLDietPlan.destroy({ 
+          where: { id: mysqlId },
+          transaction 
+        });
       }, 0);
       isMySQLDeleted = deletedRows > 0;
     }
