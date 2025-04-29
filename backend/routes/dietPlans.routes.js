@@ -2,59 +2,10 @@ const express = require('express');
 const MongoDietPlan = require('../models/mongo/DietPlan.model');
 const MySQLModels = require('../models/mysql/DietPlan.model');
 const { authenticateToken } = require('../middlewares/auth.middleware');
-const { sequelize } = require('../config/mysql.config'); // Import the sequelize instance
-const { Transaction } = require('sequelize'); // Import Transaction do dostępu do poziomów izolacji
+const { databaseType, getMySQLUserId, safeMongoOperation, safeMySQLOperation, Transaction } = require('../utils/database.utils');
 
 const router = express.Router();
 const { DietPlan: MySQLDietPlan, DietDay, Meal } = MySQLModels;
-
-// Pobranie typu bazy danych z .env
-const databaseType = process.env.DATABASE_TYPE || 'both';
-
-// Funkcja pomocnicza do poprawnego mapowania ID użytkownika
-function getMySQLUserId(user) {
-  if (user.mysqlId) return user.mysqlId;
-  if (user.sqlId) return user.sqlId;
-  if (user.numericId) return user.numericId;
-  return 1; // Domyślne ID
-}
-
-// Bezpieczna operacja MongoDB - ignoruje błędy połączenia gdy baza jest niedostępna
-async function safeMongoOperation(operation, fallback = null) {
-  if (databaseType !== 'mongo' && databaseType !== 'both') return fallback;
-
-  try {
-    return await operation();
-  } catch (error) {
-    console.log('MongoDB operation failed:', error.message);
-    return fallback;
-  }
-}
-
-// Bezpieczna operacja MySQL z obsługą poziomów izolacji
-async function safeMySQLOperation(operation, fallback = null, isolationLevel = Transaction.ISOLATION_LEVELS.REPEATABLE_READ) {
-  if (databaseType !== 'mysql' && databaseType !== 'both') return fallback;
-
-  let transaction;
-
-  try {
-    // Rozpocznij transakcję z określonym poziomem izolacji
-    transaction = await sequelize.transaction({ isolationLevel: isolationLevel });
-
-    // Wykonaj operację w kontekście transakcji
-    const result = await operation(transaction);
-
-    // Zatwierdź transakcję
-    await transaction.commit();
-
-    return result;
-  } catch (error) {
-    // Wycofaj transakcję w przypadku błędu
-    if (transaction) await transaction.rollback();
-    console.log('MySQL operation failed:', error.message);
-    return fallback;
-  }
-}
 
 // Tworzenie nowego planu diety
 router.post('/diet-plans', authenticateToken, async (req, res) => {
