@@ -22,7 +22,7 @@ const TrainingPlanDetails = ({ plan }) => {
   return (
     <Box sx={{ p: 1 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-        <FitnessCenterIcon sx={{ fontSize: 30, color: '#4CAF50', mr: 2 }} />
+        <FitnessCenterIcon sx={{ fontSize: 30, color: '#42A5F5', mr: 2 }} />
         <Typography variant="h5" component="div" sx={{ flexGrow: 1 }}>
           {plan.name}
         </Typography>
@@ -32,7 +32,7 @@ const TrainingPlanDetails = ({ plan }) => {
             size="small"
             sx={{
               fontWeight: 'bold',
-              backgroundColor: '#4CAF50',
+              backgroundColor: '#42A5F5',
               color: 'white'
             }}
           />
@@ -67,7 +67,7 @@ const TrainingPlanDetails = ({ plan }) => {
                 sx={{ backgroundColor: 'rgba(76,175,80,0.05)' }}
               >
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <EventIcon sx={{ mr: 1, color: '#4CAF50' }} />
+                  <EventIcon sx={{ mr: 1, color: '#42A5F5' }} />
                   <Typography variant="subtitle1">
                     Dzień {index + 1}: {day.name || `Trening ${index + 1}`}
                   </Typography>
