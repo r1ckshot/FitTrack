@@ -3,6 +3,7 @@ const MongoTrainingPlan = require('../models/mongo/TrainingPlan.model');
 const MySQLModels = require('../models/mysql/TrainingPlan.model');
 const { authenticateToken } = require('../middlewares/auth.middleware');
 const { sequelize } = require('../config/mysql.config'); // Import sequelize instance
+const { Transaction } = require('sequelize'); // Import Transaction do dostępu do poziomów izolacji
 
 const router = express.Router();
 const { TrainingPlan: MySQLTrainingPlan, TrainingDay, TrainingExercise } = MySQLModels;
@@ -30,16 +31,15 @@ async function safeMongoOperation(operation, fallback = null) {
   }
 }
 
-// Bezpieczna operacja MySQL - ignoruje błędy połączenia gdy baza jest niedostępna
-// Teraz z obsługą transakcji
-async function safeMySQLOperation(operation, fallback = null) {
+// Bezpieczna operacja MySQL z obsługą poziomów izolacji
+async function safeMySQLOperation(operation, fallback = null, isolationLevel = Transaction.ISOLATION_LEVELS.REPEATABLE_READ) {
   if (databaseType !== 'mysql' && databaseType !== 'both') return fallback;
 
   let transaction;
 
   try {
-    // Rozpocznij transakcję
-    transaction = await sequelize.transaction();
+    // Rozpocznij transakcję z określonym poziomem izolacji
+    transaction = await sequelize.transaction({ isolationLevel: isolationLevel });
 
     // Wykonaj operację w kontekście transakcji
     const result = await operation(transaction);
@@ -103,7 +103,7 @@ router.post('/training-plans', authenticateToken, async (req, res) => {
       });
     }
 
-    // MySQL - operacja z transakcją
+    // MySQL - operacja z transakcją i poziomem izolacji SERIALIZABLE (dla zapewnienia pełnej integralności danych przy tworzeniu)
     if (databaseType === 'mysql' || databaseType === 'both') {
       createdPlanMySQL = await safeMySQLOperation(async (transaction) => {
         // Tworzenie planu
@@ -154,7 +154,7 @@ router.post('/training-plans', authenticateToken, async (req, res) => {
           include: [{ model: TrainingDay, include: [TrainingExercise] }],
           transaction
         });
-      });
+      }, null, Transaction.ISOLATION_LEVELS.SERIALIZABLE); // Najwyższy poziom izolacji dla operacji tworzenia
     }
 
     // Odpowiedź
@@ -202,7 +202,7 @@ router.get('/training-plans', authenticateToken, async (req, res) => {
       }, []);
     }
 
-    // Pobierz dane z MySQL (read operations also benefit from transactions)
+    // Pobierz dane z MySQL (używamy READ_COMMITTED dla operacji odczytu wielu rekordów)
     if (databaseType === 'mysql' || databaseType === 'both') {
       const rawMysqlPlans = await safeMySQLOperation(async (transaction) => {
         return await MySQLTrainingPlan.findAll({
@@ -217,7 +217,7 @@ router.get('/training-plans', authenticateToken, async (req, res) => {
           ],
           transaction
         });
-      }, []);
+      }, [], Transaction.ISOLATION_LEVELS.READ_COMMITTED); // Poziom izolacji dla operacji odczytu wielu rekordów
 
       // Normalizacja danych z MySQL
       mysqlPlans = rawMysqlPlans.map(plan => ({
@@ -298,7 +298,7 @@ router.get('/training-plans/:id', authenticateToken, async (req, res) => {
             include: [{ model: TrainingDay, include: [TrainingExercise] }],
             transaction
           });
-        }, []);
+        }, [], Transaction.ISOLATION_LEVELS.REPEATABLE_READ); // Poziom izolacji dla odczytu pojedynczego rekordu
 
         const mysqlPlan = matchingMysqlPlans && matchingMysqlPlans.length > 0 ? matchingMysqlPlans[0] : null;
 
@@ -317,7 +317,7 @@ router.get('/training-plans/:id', authenticateToken, async (req, res) => {
           include: [{ model: TrainingDay, include: [TrainingExercise] }],
           transaction
         });
-      });
+      }, null, Transaction.ISOLATION_LEVELS.REPEATABLE_READ); // Poziom izolacji dla odczytu pojedynczego rekordu
 
       if (mysqlPlan) {
         // Utwórz zunifikowaną strukturę danych zgodną z oczekiwaniami frontendu
@@ -393,7 +393,7 @@ router.put('/training-plans/:id', authenticateToken, async (req, res) => {
               where: { name: mongoPlan.name },
               transaction
             });
-          }, []);
+          }, [], Transaction.ISOLATION_LEVELS.REPEATABLE_READ);
 
           if (mysqlPlans && mysqlPlans.length > 0) {
             mysqlId = mysqlPlans[0].id;
@@ -408,7 +408,7 @@ router.put('/training-plans/:id', authenticateToken, async (req, res) => {
       if (databaseType === 'both' && !isNaN(mysqlId)) {
         const mysqlPlan = await safeMySQLOperation(async (transaction) => {
           return await MySQLTrainingPlan.findByPk(mysqlId, { transaction });
-        });
+        }, null, Transaction.ISOLATION_LEVELS.REPEATABLE_READ);
 
         if (mysqlPlan) {
           const mongoPlans = await safeMongoOperation(async () => {
@@ -571,7 +571,7 @@ router.put('/training-plans/:id', authenticateToken, async (req, res) => {
           include: [{ model: TrainingDay, include: [TrainingExercise] }],
           transaction
         });
-      });
+      }, null, Transaction.ISOLATION_LEVELS.SERIALIZABLE); // Najwyższy poziom izolacji dla złożonej operacji aktualizacji
     }
 
     // Obsługa odpowiedzi
@@ -627,7 +627,7 @@ router.delete('/training-plans/:id', authenticateToken, async (req, res) => {
               where: { name: mongoPlan.name },
               transaction
             });
-          }, []);
+          }, [], Transaction.ISOLATION_LEVELS.REPEATABLE_READ);
 
           if (mysqlPlans && mysqlPlans.length > 0) {
             mysqlId = mysqlPlans[0].id;
@@ -640,7 +640,7 @@ router.delete('/training-plans/:id', authenticateToken, async (req, res) => {
       if (databaseType === 'both' && !isNaN(mysqlId)) {
         const mysqlPlan = await safeMySQLOperation(async (transaction) => {
           return await MySQLTrainingPlan.findByPk(mysqlId, { transaction });
-        });
+        }, null, Transaction.ISOLATION_LEVELS.REPEATABLE_READ);
 
         if (mysqlPlan) {
           const mongoPlans = await safeMongoOperation(async () => {
@@ -689,7 +689,7 @@ router.delete('/training-plans/:id', authenticateToken, async (req, res) => {
           where: { id: mysqlId },
           transaction
         });
-      }, 0);
+      }, 0, Transaction.ISOLATION_LEVELS.SERIALIZABLE); // Najwyższy poziom izolacji dla operacji usuwania
       isMySQLDeleted = deletedRows > 0;
     }
 
