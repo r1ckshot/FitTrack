@@ -3,6 +3,7 @@ const MongoDietPlan = require('../models/mongo/DietPlan.model');
 const MySQLModels = require('../models/mysql/DietPlan.model');
 const { authenticateToken } = require('../middlewares/auth.middleware');
 const { sequelize } = require('../config/mysql.config'); // Import the sequelize instance
+const { Transaction } = require('sequelize'); // Import Transaction do dostępu do poziomów izolacji
 
 const router = express.Router();
 const { DietPlan: MySQLDietPlan, DietDay, Meal } = MySQLModels;
@@ -30,23 +31,26 @@ async function safeMongoOperation(operation, fallback = null) {
   }
 }
 
-// Bezpieczna operacja MySQL - ignoruje błędy połączenia gdy baza jest niedostępna
-// Teraz z obsługą transakcji
-async function safeMySQLOperation(operation, fallback = null) {
+// Bezpieczna operacja MySQL z obsługą poziomów izolacji
+async function safeMySQLOperation(operation, fallback = null, isolationLevel = Transaction.ISOLATION_LEVELS.REPEATABLE_READ) {
   if (databaseType !== 'mysql' && databaseType !== 'both') return fallback;
 
-  // Rozpocznij transakcję
-  const transaction = await sequelize.transaction();
-  
+  let transaction;
+
   try {
+    // Rozpocznij transakcję z określonym poziomem izolacji
+    transaction = await sequelize.transaction({ isolationLevel: isolationLevel });
+
     // Wykonaj operację w kontekście transakcji
     const result = await operation(transaction);
+
     // Zatwierdź transakcję
     await transaction.commit();
+
     return result;
   } catch (error) {
     // Wycofaj transakcję w przypadku błędu
-    await transaction.rollback();
+    if (transaction) await transaction.rollback();
     console.log('MySQL operation failed:', error.message);
     return fallback;
   }
@@ -99,7 +103,7 @@ router.post('/diet-plans', authenticateToken, async (req, res) => {
       });
     }
 
-    // MySQL - operacja z transakcją
+    // MySQL - operacja z transakcją i poziomem izolacji SERIALIZABLE (dla zapewnienia pełnej integralności danych przy tworzeniu)
     if (databaseType === 'mysql' || databaseType === 'both') {
       createdPlanMySQL = await safeMySQLOperation(async (transaction) => {
         const plan = await MySQLDietPlan.create({
@@ -146,7 +150,7 @@ router.post('/diet-plans', authenticateToken, async (req, res) => {
           include: [{ model: DietDay, include: [Meal] }],
           transaction
         });
-      });
+      }, null, Transaction.ISOLATION_LEVELS.SERIALIZABLE); // Najwyższy poziom izolacji dla operacji tworzenia);
     }
 
     // Odpowiedź
@@ -192,7 +196,7 @@ router.get('/diet-plans', authenticateToken, async (req, res) => {
       }, []);
     }
 
-    // Pobierz dane z MySQL z transakcją
+    // Pobierz dane z MySQL (używamy READ_COMMITTED dla operacji odczytu wielu rekordów)
     if (databaseType === 'mysql' || databaseType === 'both') {
       const rawMysqlPlans = await safeMySQLOperation(async (transaction) => {
         return await MySQLDietPlan.findAll({
@@ -207,7 +211,7 @@ router.get('/diet-plans', authenticateToken, async (req, res) => {
           ],
           transaction
         });
-      }, []);
+      }, [], Transaction.ISOLATION_LEVELS.READ_COMMITTED); // Poziom izolacji dla operacji odczytu wielu rekordów
 
       // Normalizacja danych z MySQL
       mysqlPlans = rawMysqlPlans.map(plan => ({
@@ -287,7 +291,7 @@ router.get('/diet-plans/:id', authenticateToken, async (req, res) => {
             include: [{ model: DietDay, include: [Meal] }],
             transaction
           });
-        }, []);
+        }, [], Transaction.ISOLATION_LEVELS.REPEATABLE_READ); // Poziom izolacji dla odczytu pojedynczego rekordu
 
         const mysqlPlan = matchingMysqlPlans && matchingMysqlPlans.length > 0 ? matchingMysqlPlans[0] : null;
 
@@ -306,7 +310,7 @@ router.get('/diet-plans/:id', authenticateToken, async (req, res) => {
           include: [{ model: DietDay, include: [Meal] }],
           transaction
         });
-      });
+      }, null, Transaction.ISOLATION_LEVELS.REPEATABLE_READ); // Poziom izolacji dla odczytu pojedynczego rekordu
 
       if (mysqlPlan) {
         // Utwórz zunifikowaną strukturę danych zgodną z oczekiwaniami frontendu
@@ -380,7 +384,7 @@ router.put('/diet-plans/:id', authenticateToken, async (req, res) => {
               where: { name: mongoPlan.name },
               transaction 
             });
-          }, []);
+          }, [], Transaction.ISOLATION_LEVELS.REPEATABLE_READ);
 
           if (mysqlPlans && mysqlPlans.length > 0) {
             mysqlId = mysqlPlans[0].id;
@@ -393,7 +397,7 @@ router.put('/diet-plans/:id', authenticateToken, async (req, res) => {
       if (databaseType === 'both' && !isNaN(mysqlId)) {
         const mysqlPlan = await safeMySQLOperation(async (transaction) => {
           return await MySQLDietPlan.findByPk(mysqlId, { transaction });
-        });
+        }, null, Transaction.ISOLATION_LEVELS.REPEATABLE_READ);
 
         if (mysqlPlan) {
           const mongoPlans = await safeMongoOperation(async () => {
@@ -541,7 +545,7 @@ router.put('/diet-plans/:id', authenticateToken, async (req, res) => {
           include: [{ model: DietDay, include: [Meal] }],
           transaction
         });
-      });
+      }, null, Transaction.ISOLATION_LEVELS.SERIALIZABLE); // Najwyższy poziom izolacji dla złożonej operacji aktualizacji
     }
 
     if (databaseType === 'both' && updatedMongo && updatedMySQL) {
@@ -596,7 +600,7 @@ router.delete('/diet-plans/:id', authenticateToken, async (req, res) => {
               where: { name: mongoPlan.name },
               transaction 
             });
-          }, []);
+          }, [], Transaction.ISOLATION_LEVELS.REPEATABLE_READ);
 
           if (mysqlPlans && mysqlPlans.length > 0) {
             mysqlId = mysqlPlans[0].id;
@@ -609,7 +613,7 @@ router.delete('/diet-plans/:id', authenticateToken, async (req, res) => {
       if (databaseType === 'both' && !isNaN(mysqlId)) {
         const mysqlPlan = await safeMySQLOperation(async (transaction) => {
           return await MySQLDietPlan.findByPk(mysqlId, { transaction });
-        });
+        }, null, Transaction.ISOLATION_LEVELS.REPEATABLE_READ);
 
         if (mysqlPlan) {
           const mongoPlans = await safeMongoOperation(async () => {
@@ -658,7 +662,7 @@ router.delete('/diet-plans/:id', authenticateToken, async (req, res) => {
           where: { id: mysqlId },
           transaction 
         });
-      }, 0);
+      }, 0, Transaction.ISOLATION_LEVELS.SERIALIZABLE); // Najwyższy poziom izolacji dla operacji usuwania
       isMySQLDeleted = deletedRows > 0;
     }
 
