@@ -133,7 +133,7 @@ const DietPlansPage = () => {
         flexDirection: 'column',
         position: 'relative',
         overflow: 'hidden',
-        background: 'linear-gradient(135deg, #FF7043, #FFAB91)',
+        background: 'linear-gradient(135deg, #4CAF50, #81C784)',
         padding: '0',
       }}
     >
@@ -239,7 +239,7 @@ const DietPlansPage = () => {
                       borderLeft: plan.isActive ? '5px solid #FF7043' : 'none',
                       boxShadow: plan.isActive
                         ? '0 0 20px rgba(255,112,67,0.5)'
-                        : '0 4px 8px rgba(0,0,0,0.1)',
+                        : '0 4px 8px rgba(0, 0, 0, 0.1)',
                     }}
                   >
                     {plan.isActive && (

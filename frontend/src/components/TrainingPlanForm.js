@@ -279,11 +279,11 @@ const TrainingPlanForm = ({ plan, onClose }) => {
           startIcon={<AddIcon />}
           onClick={handleAddDay}
           sx={{
-            color: '#4CAF50',
-            borderColor: '#4CAF50',
+            color: '#42A5F5',
+            borderColor: '#42A5F5',
             '&:hover': {
-              borderColor: '#3b8a3e',
-              backgroundColor: 'rgba(76,175,80,0.1)'
+              borderColor: '#0b7dda',
+              backgroundColor: 'rgba(76, 92, 175, 0.1)'
             }
           }}
         >
@@ -337,9 +337,9 @@ const TrainingPlanForm = ({ plan, onClose }) => {
             onClick={handleAddDay}
             sx={{
               mt: 1,
-              backgroundColor: '#4CAF50',
+              backgroundColor: '#42A5F5',
               '&:hover': {
-                backgroundColor: '#3b8a3e',
+                backgroundColor: '#0b7dda',
               }
             }}
           >
@@ -362,9 +362,9 @@ const TrainingPlanForm = ({ plan, onClose }) => {
           disabled={saving}
           startIcon={saving ? <CircularProgress size={20} /> : <SaveIcon />}
           sx={{
-            backgroundColor: '#4CAF50',
+            backgroundColor: '#42A5F5',
             '&:hover': {
-              backgroundColor: '#3b8a3e',
+              backgroundColor: '#0b7dda',
             }
           }}
         >
