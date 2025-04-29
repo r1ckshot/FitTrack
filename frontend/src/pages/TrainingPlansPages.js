@@ -184,7 +184,7 @@ const TrainingPlansPage = () => {
               onClick={handleCreatePlan}
               sx={{
                 backgroundColor: 'white',
-                color: '#4CAF50',
+                color: '#42A5F5',
                 fontWeight: 'bold',
                 '&:hover': {
                   backgroundColor: '#f0f0f0',
@@ -226,9 +226,9 @@ const TrainingPlansPage = () => {
                 onClick={handleCreatePlan}
                 sx={{
                   mt: 2,
-                  backgroundColor: '#4CAF50',
+                  backgroundColor: '#42A5F5',
                   '&:hover': {
-                    backgroundColor: '#3b8a3e',
+                    backgroundColor: '#0b7dda',
                   },
                 }}
               >
@@ -252,9 +252,9 @@ const TrainingPlansPage = () => {
                       display: 'flex',
                       flexDirection: 'column',
                       position: 'relative',
-                      borderLeft: plan.isActive ? '5px solid #4CAF50' : 'none',
+                      borderLeft: plan.isActive ? '5px solid #42A5F5' : 'none',
                       boxShadow: plan.isActive
-                        ? '0 0 20px rgba(76,175,80,0.5)'
+                        ? '0 0 20px rgba(76,92,175,0.5)'
                         : '0 4px 8px rgba(0,0,0,0.1)',
                     }}
                   >
@@ -266,7 +266,7 @@ const TrainingPlansPage = () => {
                           position: 'absolute',
                           top: 10,
                           right: 10,
-                          backgroundColor: '#4CAF50',
+                          backgroundColor: '#42A5F5',
                           color: 'white',
                           fontWeight: 'bold',
                           zIndex: 1,
@@ -276,7 +276,7 @@ const TrainingPlansPage = () => {
                     <CardContent sx={{ flexGrow: 1, pt: plan.isActive ? 4 : 2 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                         <FitnessCenterIcon
-                          sx={{ fontSize: 30, color: '#4CAF50', mr: 1, flexShrink: 0 }}
+                          sx={{ fontSize: 30, color: '#42A5F5', mr: 1, flexShrink: 0 }}
                         />
                         <Tooltip title={plan.name} placement="top">
                           <Typography 
@@ -354,11 +354,11 @@ const TrainingPlansPage = () => {
                           variant="outlined"
                           onClick={() => handleActivatePlan(plan)}
                           sx={{
-                            color: '#4CAF50',
-                            borderColor: '#4CAF50',
+                            color: '#42A5F5',
+                            borderColor: '#42A5F5',
                             '&:hover': {
-                              borderColor: '#3b8a3e',
-                              backgroundColor: 'rgba(76,175,80,0.1)',
+                              borderColor: '#0b7dda',
+                              backgroundColor: 'rgba(76,92,175,0.1)',
                             },
                           }}
                         >

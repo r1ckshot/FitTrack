@@ -103,7 +103,7 @@ const ClientDashboard = () => {
                 onClick={() => navigate('/exercises')}
               >
                 <CardActionArea sx={{ padding: '20px' }}>
-                  <FitnessCenterIcon sx={{ fontSize: '50px', color: '#4CAF50', mb: 2 }} />
+                  <FitnessCenterIcon sx={{ fontSize: '50px', color: '#42A5F5', mb: 2 }} />
                   <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
                     Mój Plan Treningowy
                   </Typography>
@@ -124,7 +124,7 @@ const ClientDashboard = () => {
                 onClick={() => navigate('/diets')}
               >
                 <CardActionArea sx={{ padding: '20px' }}>
-                  <RestaurantIcon sx={{ fontSize: '50px', color: '#4CAF50', mb: 2 }} />
+                  <RestaurantIcon sx={{ fontSize: '50px', color: '#FF7043', mb: 2 }} />
                   <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
                     Moja Dieta
                   </Typography>

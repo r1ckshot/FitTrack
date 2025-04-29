@@ -275,7 +275,7 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel, currentExercise }) => {
   if (loading && step === 1) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px' }}>
-        <CircularProgress sx={{ color: '#4CAF50' }} />
+        <CircularProgress sx={{ color: '#42A5F5' }} />
       </Box>
     );
   }
@@ -293,10 +293,10 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel, currentExercise }) => {
           startIcon={<AddCircleOutlineIcon />}
           onClick={handleOpenCustomExerciseDialog}
           sx={{
-            color: '#4CAF50',
-            borderColor: '#4CAF50',
+            color: '#42A5F5',
+            borderColor: '#42A5F5',
             '&:hover': {
-              borderColor: '#3b8a3e',
+              borderColor: '#0b7dda',
               backgroundColor: 'rgba(76,175,80,0.1)'
             }
           }}
@@ -312,7 +312,7 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel, currentExercise }) => {
             <Chip
               label={`Partia ciała: ${selectedBodyPart}`}
               onDelete={resetFilters}
-              sx={{ backgroundColor: 'rgba(76,175,80,0.2)', color: '#333' }}
+              sx={{ backgroundColor: 'rgba(76,92, 175,0.5)', color: '#333' }}
             />
           )}
           {selectedEquipment && (
@@ -323,7 +323,7 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel, currentExercise }) => {
                 setSelectedTarget('');
                 setStep(2);
               }}
-              sx={{ backgroundColor: 'rgba(76,175,80,0.2)', color: '#333' }}
+              sx={{ backgroundColor: 'rgba(76, 92, 175, 0.5)', color: '#333' }}
             />
           )}
           {selectedTarget && (
@@ -333,7 +333,7 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel, currentExercise }) => {
                 setSelectedTarget('');
                 setStep(3);
               }}
-              sx={{ backgroundColor: 'rgba(76,175,80,0.2)', color: '#333' }}
+              sx={{ backgroundColor: 'rgba(76,92, 175,0.5)', color: '#333' }}
             />
           )}
         </Box>
@@ -343,7 +343,7 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel, currentExercise }) => {
       {step > 1 && (
         <IconButton
           onClick={goBack}
-          sx={{ backgroundColor: 'rgba(76,175,80,0.1)', color: '#4CAF50', mb: 2 }}
+          sx={{ backgroundColor: 'rgba(76,92, 175,0.3)', color: '#42A5F5', mb: 2 }}
         >
           <ArrowBackIcon />
         </IconButton>
@@ -352,7 +352,7 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel, currentExercise }) => {
       {/* Loading indicator for subsequent steps */}
       {loading && step > 1 && (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-          <CircularProgress sx={{ color: '#4CAF50' }} />
+          <CircularProgress sx={{ color: '#42A5F5' }} />
         </Box>
       )}
 
@@ -368,10 +368,10 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel, currentExercise }) => {
                 <Button
                   variant="contained"
                   sx={{
-                    backgroundColor: 'rgba(76,175,80,0.8)',
+                    backgroundColor: 'rgba(76,92, 175,0.8)',
                     color: 'white',
                     width: '100%',
-                    '&:hover': { backgroundColor: 'rgba(76,175,80,0.9)' }
+                    '&:hover': { backgroundColor: 'rgba(76,92, 175,0.9)' }
                   }}
                   onClick={() => handleBodyPartSelect(part)}
                 >
@@ -403,10 +403,10 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel, currentExercise }) => {
                   <Button
                     variant="contained"
                     sx={{
-                      backgroundColor: 'rgba(76,175,80,0.8)',
+                      backgroundColor: 'rgba(76,92, 175,0.8)',
                       color: 'white',
                       width: '100%',
-                      '&:hover': { backgroundColor: 'rgba(76,175,80,0.9)' }
+                      '&:hover': { backgroundColor: 'rgba(76,92, 175,0.9)' }
                     }}
                     onClick={() => handleEquipmentSelect(item)}
                   >
@@ -418,7 +418,7 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel, currentExercise }) => {
             <Grid item xs={12}>
               <Button
                 variant="outlined"
-                sx={{ color: '#4CAF50', borderColor: '#4CAF50' }}
+                sx={{ color: '#42A5F5', borderColor: '#42A5F5' }}
                 onClick={skipEquipment}
               >
                 Pomiń wybór sprzętu
@@ -450,10 +450,10 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel, currentExercise }) => {
                   <Button
                     variant="contained"
                     sx={{
-                      backgroundColor: 'rgba(76,175,80,0.8)',
+                      backgroundColor: 'rgba(76, 92, 175, 0.8)',
                       color: 'white',
                       width: '100%',
-                      '&:hover': { backgroundColor: 'rgba(76,175,80,0.9)' }
+                      '&:hover': { backgroundColor: 'rgba(76,92,175,0.9)' }
                     }}
                     onClick={() => handleTargetSelect(target)}
                   >
@@ -465,7 +465,7 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel, currentExercise }) => {
             <Grid item xs={12}>
               <Button
                 variant="outlined"
-                sx={{ color: '#4CAF50', borderColor: '#4CAF50' }}
+                sx={{ color: '#42A5F5', borderColor: '#42A5F5' }}
                 onClick={skipTarget}
               >
                 Pomiń wybór celu
@@ -505,7 +505,7 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel, currentExercise }) => {
               </Typography>
               <Button
                 variant="contained"
-                sx={{ mt: 2, backgroundColor: '#4CAF50' }}
+                sx={{ mt: 2, backgroundColor: '#42A5F5' }}
                 onClick={resetFilters}
               >
                 Resetuj filtry
@@ -549,9 +549,9 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel, currentExercise }) => {
                           variant="contained"
                           sx={{
                             marginTop: '10px',
-                            backgroundColor: '#4CAF50',
+                            backgroundColor: '#42A5F5',
                             color: 'white',
-                            '&:hover': { backgroundColor: '#3b8a3e' }
+                            '&:hover': { backgroundColor: '#0b7dda' }
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -658,7 +658,7 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel, currentExercise }) => {
           <Button
             onClick={handleSaveCustomExercise}
             variant="contained"
-            sx={{ backgroundColor: '#4CAF50', '&:hover': { backgroundColor: '#3b8a3e' } }}
+            sx={{ backgroundColor: '#42A5F5', '&:hover': { backgroundColor: '#0b7dda' } }}
           >
             Zapisz
           </Button>

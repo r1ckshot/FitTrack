@@ -231,10 +231,10 @@ const TrainingDayForm = ({ day, onUpdate, onRemove }) => {
           startIcon={<AddIcon />}
           onClick={handleAddExercise}
           sx={{
-            color: '#4CAF50',
-            borderColor: '#4CAF50',
+            color: '#42A5F5',
+            borderColor: '#42A5F5',
             '&:hover': {
-              borderColor: '#3b8a3e',
+              borderColor: '#0b7dda',
               backgroundColor: 'rgba(76,175,80,0.1)'
             }
           }}
@@ -256,9 +256,9 @@ const TrainingDayForm = ({ day, onUpdate, onRemove }) => {
               onClick={handleAddExercise}
               sx={{
                 mt: 1,
-                backgroundColor: '#4CAF50',
+                backgroundColor: '#42A5F5',
                 '&:hover': {
-                  backgroundColor: '#3b8a3e',
+                  backgroundColor: '#0b7dda',
                 }
               }}
             >
