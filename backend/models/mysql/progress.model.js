@@ -23,9 +23,28 @@ const Progress = sequelize.define('Progress', {
     allowNull: false,
     defaultValue: DataTypes.NOW,
   },
+  createdAt: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW
+  },
+  updatedAt: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW
+  }
 }, {
-  timestamps: true,
+  timestamps: false, // Wyłączamy automatyczne znaczniki czasowe
   tableName: 'progress',
+  hooks: {
+    beforeCreate: (record) => {
+      record.createdAt = new Date();
+      record.updatedAt = new Date();
+    },
+    beforeUpdate: (record) => {
+      record.updatedAt = new Date();
+    }
+  }
 });
 
 module.exports = Progress;
