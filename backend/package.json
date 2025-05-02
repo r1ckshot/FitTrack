@@ -22,10 +22,15 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.13.2",
     "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.2",
     "mysql2": "^3.14.0",
     "nodemon": "^3.1.9",
     "sequelize": "^6.37.7",
     "soap": "^1.1.10",
+    "xml-js": "^1.6.11",
     "xml2js": "^0.6.2"
+  },
+  "nodemonConfig": {
+    "ignore": ["uploads/*"]
   }
 }
