@@ -32,6 +32,8 @@ const TrainingPlan = sequelize.define('TrainingPlan', {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
   },
+},{
+  timestamps: false // Wyłączenie automatycznych pól createdAt i updatedAt
 });
 
 // Model TrainingDay

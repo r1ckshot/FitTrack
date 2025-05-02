@@ -33,6 +33,8 @@ const DietPlan = sequelize.define('DietPlan', {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
   },
+},{
+  timestamps: false // Wyłączenie automatycznych pól createdAt i updatedAt
 });
 
 // Model DietDay
