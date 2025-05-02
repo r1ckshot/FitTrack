@@ -736,6 +736,14 @@ router.post('/training-plans/import', authenticateToken, upload.single('file'), 
     // Wykryj format z rozszerzenia pliku
     const format = detectFileFormat(req.file.originalname);
     if (!format) {
+      // Usuń plik tymczasowy
+      if (req.file && req.file.path) {
+        try {
+          fs.unlinkSync(req.file.path);
+        } catch (err) {
+          console.error('Błąd usuwania pliku tymczasowego:', err);
+        }
+      }
       return res.status(400).json({ error: 'Nie można określić formatu pliku. Obsługiwane formaty to JSON, XML i YAML.' });
     }
 
@@ -744,6 +752,14 @@ router.post('/training-plans/import', authenticateToken, upload.single('file'), 
 
     // Walidacja danych
     if (!importData || !importData.plan || !importData.plan.name || !Array.isArray(importData.days)) {
+      // Usuń plik tymczasowy
+      if (req.file && req.file.path) {
+        try {
+          fs.unlinkSync(req.file.path);
+        } catch (err) {
+          console.error('Błąd usuwania pliku tymczasowego:', err);
+        }
+      }
       return res.status(400).json({ error: 'Nieprawidłowa struktura pliku.' });
     }
 
@@ -755,6 +771,14 @@ router.post('/training-plans/import', authenticateToken, upload.single('file'), 
 
     if (existingPlan.exists) {
       if (duplicateStrategy === 'reject') {
+        // Usuń plik tymczasowy
+        if (req.file && req.file.path) {
+          try {
+            fs.unlinkSync(req.file.path);
+          } catch (err) {
+            console.error('Błąd usuwania pliku tymczasowego:', err);
+          }
+        }
         return res.status(409).json({
           error: `Plan o nazwie "${importData.plan.name}" już istnieje. Import odrzucony.`
         });
@@ -861,7 +885,13 @@ router.post('/training-plans/import', authenticateToken, upload.single('file'), 
     }
 
     // Usuń plik tymczasowy po zakończeniu operacji
-    fs.unlinkSync(req.file.path);
+    if (req.file && req.file.path) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (err) {
+        console.error('Błąd usuwania pliku tymczasowego:', err);
+      }
+    }
 
     // Odpowiedź
     if (databaseType === 'both' && createdPlanMongo && createdPlanMySQL) {
@@ -883,6 +913,14 @@ router.post('/training-plans/import', authenticateToken, upload.single('file'), 
         plan: createdPlanMySQL
       });
     } else {
+      // Usuń plik tymczasowy w przypadku błędu
+      if (req.file && req.file.path) {
+        try {
+          fs.unlinkSync(req.file.path);
+        } catch (err) {
+          console.error('Błąd usuwania pliku tymczasowego:', err);
+        }
+      }
       res.status(500).json({ error: 'Nie udało się zaimportować planu treningowego.' });
     }
   } catch (error) {
@@ -897,7 +935,13 @@ router.post('/training-plans/import', authenticateToken, upload.single('file'), 
       }
     }
 
-    res.status(500).json({ error: 'Błąd importu planu treningowego.' });
+    // Sprawdź, czy to błąd walidacji struktury, jeśli tak - zwróć 400 zamiast 500
+    if (error.message && error.message.includes('struktura pliku')) {
+      return res.status(400).json({ error: 'Nieprawidłowa struktura pliku.' });
+    }
+
+    // Zwróć ogólny komunikat błędu dla innych przypadków
+    res.status(500).json({ error: 'Błąd importu planu treningowego: ' + (error.message || 'Nieznany błąd') });
   }
 });
 
@@ -911,6 +955,14 @@ router.post('/diet-plans/import', authenticateToken, upload.single('file'), asyn
     // Wykryj format z rozszerzenia pliku
     const format = detectFileFormat(req.file.originalname);
     if (!format) {
+      // Usuń plik tymczasowy
+      if (req.file && req.file.path) {
+        try {
+          fs.unlinkSync(req.file.path);
+        } catch (err) {
+          console.error('Błąd usuwania pliku tymczasowego:', err);
+        }
+      }
       return res.status(400).json({ error: 'Nie można określić formatu pliku. Obsługiwane formaty to JSON, XML i YAML.' });
     }
 
@@ -919,6 +971,14 @@ router.post('/diet-plans/import', authenticateToken, upload.single('file'), asyn
 
     // Walidacja danych
     if (!importData || !importData.plan || !importData.plan.name || !Array.isArray(importData.days)) {
+      // Usuń plik tymczasowy
+      if (req.file && req.file.path) {
+        try {
+          fs.unlinkSync(req.file.path);
+        } catch (err) {
+          console.error('Błąd usuwania pliku tymczasowego:', err);
+        }
+      }
       return res.status(400).json({ error: 'Nieprawidłowa struktura pliku.' });
     }
 
@@ -930,6 +990,14 @@ router.post('/diet-plans/import', authenticateToken, upload.single('file'), asyn
 
     if (existingPlan.exists) {
       if (duplicateStrategy === 'reject') {
+        // Usuń plik tymczasowy
+        if (req.file && req.file.path) {
+          try {
+            fs.unlinkSync(req.file.path);
+          } catch (err) {
+            console.error('Błąd usuwania pliku tymczasowego:', err);
+          }
+        }
         return res.status(409).json({
           error: `Plan o nazwie "${importData.plan.name}" już istnieje. Import odrzucony.`
         });
@@ -1034,7 +1102,13 @@ router.post('/diet-plans/import', authenticateToken, upload.single('file'), asyn
     }
 
     // Usuń plik tymczasowy po zakończeniu operacji
-    fs.unlinkSync(req.file.path);
+    if (req.file && req.file.path) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (err) {
+        console.error('Błąd usuwania pliku tymczasowego:', err);
+      }
+    }
 
     // Odpowiedź
     if (databaseType === 'both' && createdPlanMongo && createdPlanMySQL) {
@@ -1056,6 +1130,14 @@ router.post('/diet-plans/import', authenticateToken, upload.single('file'), asyn
         plan: createdPlanMySQL
       });
     } else {
+      // Usuń plik tymczasowy w przypadku błędu
+      if (req.file && req.file.path) {
+        try {
+          fs.unlinkSync(req.file.path);
+        } catch (err) {
+          console.error('Błąd usuwania pliku tymczasowego:', err);
+        }
+      }
       res.status(500).json({ error: 'Nie udało się zaimportować planu dietetycznego.' });
     }
   } catch (error) {
@@ -1070,7 +1152,13 @@ router.post('/diet-plans/import', authenticateToken, upload.single('file'), asyn
       }
     }
 
-    res.status(500).json({ error: 'Błąd importu planu dietetycznego.' });
+    // Sprawdź, czy to błąd walidacji struktury, jeśli tak - zwróć 400 zamiast 500
+    if (error.message && error.message.includes('struktura pliku')) {
+      return res.status(400).json({ error: 'Nieprawidłowa struktura pliku.' });
+    }
+
+    // Zwróć ogólny komunikat błędu dla innych przypadków
+    res.status(500).json({ error: 'Błąd importu planu dietetycznego: ' + (error.message || 'Nieznany błąd') });
   }
 });
 
