@@ -55,6 +55,9 @@ app.use('/api', dietPlansRoutes); // Trasy dla Diet Plans
 const userProfileRoutes = require('./routes/userProfile.routes');
 app.use('/api', userProfileRoutes); 
 
+const plansImportExportRoutes = require('./routes/plansImportExport.routes');
+app.use('/api', plansImportExportRoutes); // Trasy dla importu/eksportu planów
+
 // Ustawienie portu i uruchomienie serwera
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
