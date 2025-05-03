@@ -8,7 +8,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import { getUserRole } from './utils/auth';
 import ProgressPage from './pages/ProgressPage';
-import TrainingPlansPage from './pages/TrainingPlansPages';
+import TrainingPlansPage from './pages/TrainingPlansPage';
 import DietPlansPage from './pages/DietPlansPage';
 import ProfilePage from './pages/UserProfile';
 import { SnackbarProvider } from './contexts/SnackbarContext'; // dodany import
