@@ -179,20 +179,24 @@ function extractTrainingPlanData(plan, planType = 'mongo') {
           dateCreated: plan.dateCreated,
           dateUpdated: plan.dateUpdated
         },
-        days: plan.days.map(day => ({
-          dayOfWeek: day.dayOfWeek,
-          name: day.name,
-          order: day.order
-        })),
+        days: plan.days
+          .sort((a, b) => a.order - b.order)  // Sortowanie dni według pola order
+          .map(day => ({
+            dayOfWeek: day.dayOfWeek,
+            name: day.name,
+            order: day.order
+          })),
         items: []
       };
 
       // Dodajemy ćwiczenia jako listę płaską z referencją do dnia
       plan.days.forEach((day, dayIndex) => {
         if (day.exercises && day.exercises.length > 0) {
-          day.exercises.forEach(exercise => {
+          // Sortowanie ćwiczeń według pola order
+          const sortedExercises = [...day.exercises].sort((a, b) => a.order - b.order);
+          sortedExercises.forEach(exercise => {
             planData.items.push({
-              dayIndex: dayIndex, // Indeks dnia, do którego należy ćwiczenie
+              dayIndex: planData.days.findIndex(d => d.order === day.order), // Znajdujemy prawidłowy indeks po sortowaniu
               exerciseId: exercise.exerciseId,
               exerciseName: exercise.exerciseName,
               sets: exercise.sets,
@@ -220,21 +224,28 @@ function extractTrainingPlanData(plan, planType = 'mongo') {
           dateCreated: plan.dateCreated,
           dateUpdated: plan.dateUpdated
         },
-        days: plan.TrainingDays ? plan.TrainingDays.map(day => ({
-          dayOfWeek: day.dayOfWeek,
-          name: day.name,
-          order: day.order
-        })) : [],
+        days: plan.TrainingDays ? 
+          plan.TrainingDays
+            .sort((a, b) => a.order - b.order)  // Sortowanie dni według pola order
+            .map(day => ({
+              dayOfWeek: day.dayOfWeek,
+              name: day.name,
+              order: day.order
+            })) : [],
         items: []
       };
 
       // Dodajemy ćwiczenia jako listę płaską z referencją do dnia
       if (plan.TrainingDays) {
-        plan.TrainingDays.forEach((day, dayIndex) => {
+        plan.TrainingDays.forEach((day) => {
+          const dayIndex = planData.days.findIndex(d => d.order === day.order); // Znajdujemy prawidłowy indeks po sortowaniu
+          
           if (day.TrainingExercises && day.TrainingExercises.length > 0) {
-            day.TrainingExercises.forEach(exercise => {
+            // Sortowanie ćwiczeń według pola order
+            const sortedExercises = [...day.TrainingExercises].sort((a, b) => a.order - b.order);
+            sortedExercises.forEach(exercise => {
               planData.items.push({
-                dayIndex: dayIndex, // Indeks dnia, do którego należy ćwiczenie
+                dayIndex: dayIndex,
                 exerciseId: exercise.exerciseId,
                 exerciseName: exercise.exerciseName,
                 sets: exercise.sets,
@@ -270,7 +281,7 @@ function reconstructTrainingPlan(importData) {
       days: []
     };
 
-    // Rekonstruujemy dni
+    // Rekonstruujemy dni (już posortowane)
     importData.days.forEach((dayData, index) => {
       plan.days.push({
         dayOfWeek: dayData.dayOfWeek,
@@ -280,11 +291,22 @@ function reconstructTrainingPlan(importData) {
       });
     });
 
-    // Dodajemy ćwiczenia do odpowiednich dni
+    // Grupujemy ćwiczenia według dayIndex
+    const exercisesByDay = {};
     importData.items.forEach(item => {
-      const dayIndex = item.dayIndex;
+      if (!exercisesByDay[item.dayIndex]) {
+        exercisesByDay[item.dayIndex] = [];
+      }
+      exercisesByDay[item.dayIndex].push(item);
+    });
+
+    // Dodajemy posortowane ćwiczenia do odpowiednich dni
+    Object.keys(exercisesByDay).forEach(dayIndex => {
       if (plan.days[dayIndex]) {
-        plan.days[dayIndex].exercises.push({
+        // Sortowanie ćwiczeń według pola order
+        const sortedExercises = exercisesByDay[dayIndex].sort((a, b) => a.order - b.order);
+        
+        plan.days[dayIndex].exercises = sortedExercises.map(item => ({
           exerciseId: item.exerciseId,
           exerciseName: item.exerciseName,
           sets: item.sets,
@@ -296,7 +318,7 @@ function reconstructTrainingPlan(importData) {
           equipment: item.equipment,
           target: item.target,
           bodyPart: item.bodyPart
-        });
+        }));
       }
     });
 
@@ -324,20 +346,26 @@ function extractDietPlanData(plan, planType = 'mongo') {
           dateCreated: plan.dateCreated,
           dateUpdated: plan.dateUpdated
         },
-        days: plan.days.map(day => ({
-          dayOfWeek: day.dayOfWeek,
-          name: day.name,
-          order: day.order
-        })),
+        days: plan.days
+          .sort((a, b) => a.order - b.order)  // Sortowanie dni według pola order
+          .map(day => ({
+            dayOfWeek: day.dayOfWeek,
+            name: day.name,
+            order: day.order
+          })),
         items: []
       };
 
       // Dodajemy posiłki jako listę płaską z referencją do dnia
-      plan.days.forEach((day, dayIndex) => {
+      plan.days.forEach((day) => {
+        const dayIndex = planData.days.findIndex(d => d.order === day.order); // Znajdujemy prawidłowy indeks po sortowaniu
+        
         if (day.meals && day.meals.length > 0) {
-          day.meals.forEach(meal => {
+          // Sortowanie posiłków według pola order
+          const sortedMeals = [...day.meals].sort((a, b) => a.order - b.order);
+          sortedMeals.forEach(meal => {
             planData.items.push({
-              dayIndex: dayIndex, // Indeks dnia, do którego należy posiłek
+              dayIndex: dayIndex,
               recipeId: meal.recipeId,
               title: meal.title,
               calories: meal.calories,
@@ -363,21 +391,28 @@ function extractDietPlanData(plan, planType = 'mongo') {
           dateCreated: plan.dateCreated,
           dateUpdated: plan.dateUpdated
         },
-        days: plan.DietDays ? plan.DietDays.map(day => ({
-          dayOfWeek: day.dayOfWeek,
-          name: day.name,
-          order: day.order
-        })) : [],
+        days: plan.DietDays ? 
+          plan.DietDays
+            .sort((a, b) => a.order - b.order)  // Sortowanie dni według pola order
+            .map(day => ({
+              dayOfWeek: day.dayOfWeek,
+              name: day.name,
+              order: day.order
+            })) : [],
         items: []
       };
 
       // Dodajemy posiłki jako listę płaską z referencją do dnia
       if (plan.DietDays) {
-        plan.DietDays.forEach((day, dayIndex) => {
+        plan.DietDays.forEach((day) => {
+          const dayIndex = planData.days.findIndex(d => d.order === day.order); // Znajdujemy prawidłowy indeks po sortowaniu
+          
           if (day.Meals && day.Meals.length > 0) {
-            day.Meals.forEach(meal => {
+            // Sortowanie posiłków według pola order
+            const sortedMeals = [...day.Meals].sort((a, b) => a.order - b.order);
+            sortedMeals.forEach(meal => {
               planData.items.push({
-                dayIndex: dayIndex, // Indeks dnia, do którego należy posiłek
+                dayIndex: dayIndex,
                 recipeId: meal.recipeId,
                 title: meal.title,
                 calories: meal.calories,
@@ -401,7 +436,6 @@ function extractDietPlanData(plan, planType = 'mongo') {
   }
 }
 
-// Funkcja do rekonstrukcji planu dietetycznego z wspólnej struktury
 function reconstructDietPlan(importData) {
   try {
     const plan = {
@@ -411,7 +445,7 @@ function reconstructDietPlan(importData) {
       days: []
     };
 
-    // Rekonstruujemy dni
+    // Rekonstruujemy dni (już posortowane)
     importData.days.forEach((dayData, index) => {
       plan.days.push({
         dayOfWeek: dayData.dayOfWeek,
@@ -421,11 +455,22 @@ function reconstructDietPlan(importData) {
       });
     });
 
-    // Dodajemy posiłki do odpowiednich dni
+    // Grupujemy posiłki według dayIndex
+    const mealsByDay = {};
     importData.items.forEach(item => {
-      const dayIndex = item.dayIndex;
+      if (!mealsByDay[item.dayIndex]) {
+        mealsByDay[item.dayIndex] = [];
+      }
+      mealsByDay[item.dayIndex].push(item);
+    });
+
+    // Dodajemy posortowane posiłki do odpowiednich dni
+    Object.keys(mealsByDay).forEach(dayIndex => {
       if (plan.days[dayIndex]) {
-        plan.days[dayIndex].meals.push({
+        // Sortowanie posiłków według pola order
+        const sortedMeals = mealsByDay[dayIndex].sort((a, b) => a.order - b.order);
+        
+        plan.days[dayIndex].meals = sortedMeals.map(item => ({
           recipeId: item.recipeId,
           title: item.title,
           calories: item.calories,
@@ -435,7 +480,7 @@ function reconstructDietPlan(importData) {
           image: item.image,
           recipeUrl: item.recipeUrl,
           order: item.order
-        });
+        }));
       }
     });
 
