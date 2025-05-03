@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Box, TextField, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, Snackbar, Alert } from '@mui/material';
+import { Box, TextField, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton } from '@mui/material';
 import { Delete, Edit } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import api from '../services/api';
-import Navbar from '../components/Navbar'; // Import Navbar
-import BackgroundIcons from '../components/BackgroundIcons'; // Import tła z ikonami
+import Navbar from '../components/Navbar';
+import BackgroundIcons from '../components/BackgroundIcons';
+import { useSnackbar } from '../contexts/SnackbarContext'; // Import hooka do Snackbara
 
 const ProgressPage = () => {
   const [progressData, setProgressData] = useState([]);
@@ -15,7 +16,7 @@ const ProgressPage = () => {
   });
   const [editMode, setEditMode] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const { showSnackbar } = useSnackbar(); // Pobieramy funkcję do wyświetlania Snackbara
 
   const fetchProgressData = async () => {
     try {
@@ -23,6 +24,7 @@ const ProgressPage = () => {
       setProgressData(response.data);
     } catch (error) {
       console.error('Błąd podczas pobierania danych postępów:', error);
+      showSnackbar('Błąd podczas pobierania danych postępów', 'error');
     }
   };
 
@@ -33,16 +35,16 @@ const ProgressPage = () => {
         await api.put(`/progress/${editId}`, formData);
         setEditMode(false);
         setEditId(null);
-        setSnackbar({ open: true, message: 'Postępy zaktualizowane pomyślnie!', severity: 'success' });
+        showSnackbar('Postępy zaktualizowane pomyślnie!', 'success');
       } else {
         await api.post('/progress', formData);
-        setSnackbar({ open: true, message: 'Postępy dodane pomyślnie!', severity: 'success' });
+        showSnackbar('Postępy dodane pomyślnie!', 'success');
       }
       fetchProgressData();
       setFormData({ weight: '', trainingTime: '', date: new Date().toISOString().substring(0, 10) });
     } catch (error) {
       console.error('Błąd podczas zapisywania postępów:', error);
-      setSnackbar({ open: true, message: 'Błąd podczas zapisywania postępów.', severity: 'error' });
+      showSnackbar('Błąd podczas zapisywania postępów', 'error');
     }
   };
 
@@ -50,10 +52,10 @@ const ProgressPage = () => {
     try {
       await api.delete(`/progress/${id}`);
       fetchProgressData();
-      setSnackbar({ open: true, message: 'Postępy usunięte pomyślnie!', severity: 'success' });
+      showSnackbar('Postępy usunięte pomyślnie!', 'success');
     } catch (error) {
       console.error('Błąd podczas usuwania postępów:', error);
-      setSnackbar({ open: true, message: 'Błąd podczas usuwania postępów.', severity: 'error' });
+      showSnackbar('Błąd podczas usuwania postępów', 'error');
     }
   };
 
@@ -82,22 +84,8 @@ const ProgressPage = () => {
         background: 'linear-gradient(135deg, #4CAF50, #81C784)',
       }}
     >
-      {/* Navbar */}
       <Navbar />
-
-      {/* Tło z ikonami */}
       <BackgroundIcons />
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
 
       <Box
         sx={{
@@ -125,7 +113,6 @@ const ProgressPage = () => {
             Śledzenie Postępów
           </Typography>
 
-          {/* Formularz */}
           <Box
             component="form"
             onSubmit={handleSubmit}
@@ -168,7 +155,6 @@ const ProgressPage = () => {
             </Button>
           </Box>
 
-          {/* Tabela */}
           <TableContainer>
             <Table>
               <TableHead>
