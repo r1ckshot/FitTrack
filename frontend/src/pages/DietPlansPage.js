@@ -10,7 +10,9 @@ import BackgroundIcons from '../components/BackgroundIcons';
 import Navbar from '../components/Navbar';
 import DietPlanForm from '../components/DietPlanForm';
 import DietPlanDetails from '../components/DietPlanDetails';
+import ImportExportComponent from '../components/ImportExportComponent';
 import api from '../services/api';
+import { useSnackbar } from '../contexts/SnackbarContext';
 
 const DietPlansPage = () => {
   const [plans, setPlans] = useState([]);
@@ -21,6 +23,7 @@ const DietPlansPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [planToDelete, setPlanToDelete] = useState(null);
   const [viewMode, setViewMode] = useState('edit'); // 'edit' lub 'view'
+  const { showSnackbar } = useSnackbar();
 
   // Uniwersalna funkcja do pobierania ID planu (działa z obiema bazami)
   const getPlanId = (plan) => {
@@ -36,6 +39,7 @@ const DietPlansPage = () => {
       setPlans(response.data);
     } catch (error) {
       console.error('Błąd podczas pobierania planów dietetycznych:', error);
+      showSnackbar('Nie udało się pobrać planów dietetycznych', 'error');
     } finally {
       setLoading(false);
     }
@@ -83,8 +87,11 @@ const DietPlansPage = () => {
       setDeleteDialogOpen(false);
       setPlanToDelete(null);
       await fetchPlans();
+
+      showSnackbar('Plan dietetyczny został pomyślnie usunięty', 'success');
     } catch (error) {
       console.error('Błąd podczas usuwania planu dietetycznego:', error);
+      showSnackbar('Nie udało się usunąć planu dietetycznego', 'error');
     }
   };
 
@@ -92,7 +99,9 @@ const DietPlansPage = () => {
   const handleFormClose = (refreshNeeded = false) => {
     setOpenForm(false);
     setSelectedPlan(null);
-    if (refreshNeeded) fetchPlans();
+    if (refreshNeeded) {
+      fetchPlans();
+    }
   };
 
   // Handle details view close
@@ -117,11 +126,15 @@ const DietPlansPage = () => {
       if (planId) {
         await api.put(`/diet-plans/${planId}`, { ...plan, isActive: true });
         fetchPlans();
+
+        showSnackbar(`Plan "${plan.name}" został aktywowany`, 'success');
       } else {
         console.error('Nie można aktywować planu. Brak ID planu.');
+        showSnackbar('Nie można aktywować planu. Brak ID planu.', 'error');
       }
     } catch (error) {
       console.error('Błąd podczas aktywacji planu dietetycznego:', error);
+      showSnackbar('Nie udało się aktywować planu dietetycznego', 'error');
     }
   };
 
@@ -160,7 +173,14 @@ const DietPlansPage = () => {
           </Typography>
         </motion.div>
 
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3, gap: 2 }}>
+          {/* Dodajemy komponent importu/eksportu dla strony z planami */}
+          <ImportExportComponent
+            planType="diet"
+            planId={null} // Brak ID, bo to import/eksport na poziomie strony
+            onImportSuccess={fetchPlans}
+          />
+
           <motion.div whileHover={{ scale: 1.05 }}>
             <Button
               variant="contained"
@@ -204,20 +224,28 @@ const DietPlansPage = () => {
               <Typography variant="body1" gutterBottom>
                 Stwórz swój pierwszy plan dietetyczny, aby zacząć.
               </Typography>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={handleCreatePlan}
-                sx={{
-                  mt: 2,
-                  backgroundColor: '#FF7043',
-                  '&:hover': {
-                    backgroundColor: '#E64A19',
-                  },
-                }}
-              >
-                Dodaj Plan
-              </Button>
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2, gap: 2 }}>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={handleCreatePlan}
+                  sx={{
+                    backgroundColor: '#FF7043',
+                    '&:hover': {
+                      backgroundColor: '#E64A19',
+                    },
+                  }}
+                >
+                  Dodaj Plan
+                </Button>
+
+                {/* Komponent ImportExport dla pustej strony */}
+                <ImportExportComponent
+                  planType="diet"
+                  planId={null}
+                  onImportSuccess={fetchPlans}
+                />
+              </Box>
             </Box>
           </motion.div>
         ) : (
@@ -263,8 +291,8 @@ const DietPlansPage = () => {
                           sx={{ fontSize: 30, color: '#FF7043', mr: 1, flexShrink: 0 }}
                         />
                         <Tooltip title={plan.name} placement="top">
-                          <Typography 
-                            variant="h6" 
+                          <Typography
+                            variant="h6"
                             component="div"
                             sx={{
                               overflow: 'hidden',
@@ -274,16 +302,16 @@ const DietPlansPage = () => {
                               WebkitBoxOrient: 'vertical',
                               lineHeight: '1.2',
                               maxHeight: '2.4em'
-                            }}  
+                            }}
                           >
                             {plan.name}
                           </Typography>
                         </Tooltip>
                       </Box>
-                      <Typography 
-                        variant="body2" 
-                        color="text.secondary" 
-                        sx={{ 
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{
                           mb: 2,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -332,6 +360,16 @@ const DietPlansPage = () => {
                           </IconButton>
                         </Tooltip>
                       </Box>
+
+                      {/* Dodajemy możliwość eksportu dla konkretnego planu */}
+                      <Box sx={{ ml: 1 }}>
+                        <ImportExportComponent
+                          planType="diet"
+                          planId={getPlanId(plan)}
+                          showImport={false}
+                        />
+                      </Box>
+
                       {!plan.isActive && (
                         <Button
                           size="small"
@@ -387,7 +425,7 @@ const DietPlansPage = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleDetailsClose}>Zamknij</Button>
-          <Button 
+          <Button
             onClick={() => {
               handleDetailsClose();
               handleEditPlan(selectedPlan);

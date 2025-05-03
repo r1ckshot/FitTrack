@@ -10,7 +10,9 @@ import BackgroundIcons from '../components/BackgroundIcons';
 import Navbar from '../components/Navbar';
 import TrainingPlanForm from '../components/TrainingPlanForm';
 import TrainingPlanDetails from '../components/TrainingPlanDetails';
+import ImportExportComponent from '../components/ImportExportComponent';
 import api from '../services/api';
+import { useSnackbar } from '../contexts/SnackbarContext'; 
 
 const TrainingPlansPage = () => {
   const [plans, setPlans] = useState([]);
@@ -21,6 +23,7 @@ const TrainingPlansPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [planToDelete, setPlanToDelete] = useState(null);
   const [viewMode, setViewMode] = useState('edit'); // 'edit' lub 'view'
+  const { showSnackbar } = useSnackbar(); 
 
   // Uniwersalna funkcja do pobierania ID planu (działa z obiema bazami)
   const getPlanId = (plan) => {
@@ -38,6 +41,7 @@ const TrainingPlansPage = () => {
       setPlans(response.data);
     } catch (error) {
       console.error('Błąd podczas pobierania planów treningowych:', error);
+      showSnackbar('Nie udało się pobrać planów treningowych', 'error');
     } finally {
       setLoading(false);
     }
@@ -91,8 +95,12 @@ const TrainingPlansPage = () => {
       setDeleteDialogOpen(false);
       setPlanToDelete(null);
       await fetchPlans();
+      
+      // Show success message
+      showSnackbar('Plan treningowy został pomyślnie usunięty', 'success');
     } catch (error) {
       console.error('Błąd podczas usuwania planu treningowego:', error);
+      showSnackbar('Nie udało się usunąć planu treningowego', 'error');
     }
   };
 
@@ -105,7 +113,7 @@ const TrainingPlansPage = () => {
     }
   };
 
-  // Handle details view close
+  // Handle details close
   const handleDetailsClose = () => {
     setOpenDetails(false);
     setSelectedPlan(null);
@@ -133,11 +141,15 @@ const TrainingPlansPage = () => {
         
         // Odświeżamy listę planów
         fetchPlans();
+
+        showSnackbar(`Plan "${plan.name}" został aktywowany`, 'success');
       } else {
         console.error('Nie można aktywować planu. Brak ID planu.');
+        showSnackbar('Nie można aktywować planu. Brak ID planu.', 'error');
       }
     } catch (error) {
       console.error('Błąd podczas aktywacji planu treningowego:', error);
+      showSnackbar('Nie udało się aktywować planu treningowego', 'error');
     }
   };
 
@@ -176,7 +188,14 @@ const TrainingPlansPage = () => {
           </Typography>
         </motion.div>
 
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3, gap: 2 }}>
+          {/* Dodajemy komponent importu/eksportu dla strony z planami */}
+          <ImportExportComponent 
+            planType="training" 
+            planId={null} // Brak ID, bo to import/eksport na poziomie strony
+            onImportSuccess={fetchPlans} 
+          />
+          
           <motion.div whileHover={{ scale: 1.05 }}>
             <Button
               variant="contained"
@@ -218,22 +237,30 @@ const TrainingPlansPage = () => {
                 Nie masz jeszcze żadnych planów treningowych
               </Typography>
               <Typography variant="body1" gutterBottom>
-                Stwórz swój pierwszy plan treningowy, aby zacząć.
+                Stwórz swój pierwszy plan treningowy lub zaimportuj istniejący.
               </Typography>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={handleCreatePlan}
-                sx={{
-                  mt: 2,
-                  backgroundColor: '#42A5F5',
-                  '&:hover': {
-                    backgroundColor: '#0b7dda',
-                  },
-                }}
-              >
-                Dodaj Plan
-              </Button>
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2, gap: 2 }}>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={handleCreatePlan}
+                  sx={{
+                    backgroundColor: '#42A5F5',
+                    '&:hover': {
+                      backgroundColor: '#0b7dda',
+                    },
+                  }}
+                >
+                  Dodaj Plan
+                </Button>
+                
+                {/* Komponent ImportExport dla pustej strony */}
+                <ImportExportComponent 
+                  planType="training" 
+                  planId={null}
+                  onImportSuccess={fetchPlans} 
+                />
+              </Box>
             </Box>
           </motion.div>
         ) : (
@@ -319,35 +346,47 @@ const TrainingPlansPage = () => {
                       </Typography>
                     </CardContent>
                     <CardActions sx={{ justifyContent: 'space-between', p: 2 }}>
-                      <Box>
-                        <Tooltip title="Przeglądaj">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleViewPlan(plan)}
-                            sx={{ color: '#FBBC05' }}
-                          >
-                            <VisibilityIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Edytuj">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleEditPlan(plan)}
-                            sx={{ color: '#4285F4' }}
-                          >
-                            <EditIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Usuń">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleDeleteConfirm(plan)}
-                            sx={{ color: '#EA4335' }}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </Tooltip>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Box>
+                          <Tooltip title="Przeglądaj">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleViewPlan(plan)}
+                              sx={{ color: '#FBBC05' }}
+                            >
+                              <VisibilityIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Edytuj">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleEditPlan(plan)}
+                              sx={{ color: '#4285F4' }}
+                            >
+                              <EditIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Usuń">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleDeleteConfirm(plan)}
+                              sx={{ color: '#EA4335' }}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                        
+                        {/* Dodajemy możliwość eksportu dla konkretnego planu */}
+                        <Box sx={{ ml: 1 }}>
+                          <ImportExportComponent 
+                            planType="training" 
+                            planId={getPlanId(plan)}
+                            showImport={false}
+                          />
+                        </Box>
                       </Box>
+                      
                       {!plan.isActive && (
                         <Button
                           size="small"
