@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+
 const User = mongoose.model(
   "User",
   new mongoose.Schema({
@@ -15,11 +16,6 @@ const User = mongoose.model(
     password: {
       type: String,
       required: true
-    },
-    role: {
-      type: String,
-      enum: ['client', 'trainer', 'admin'],
-      default: 'client'
     },
     profileData: {
       firstName: String,

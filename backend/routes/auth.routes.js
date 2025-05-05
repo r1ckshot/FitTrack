@@ -9,18 +9,9 @@ const router = express.Router();
 
 // Rejestracja użytkownika
 router.post('/auth/register', async (req, res) => {
-  const { username, email, password, role, accessCode } = req.body;
+  const { username, email, password } = req.body;
 
   try {
-    // Sprawdzanie roli i kodu dostępu
-    if (role === 'trainer' && accessCode !== process.env.TRAINER_ACCESS_CODE) {
-      return res.status(400).json({ error: 'Nieprawidłowy kod dostępu dla trenera.' });
-    }
-
-    if (role === 'admin' && accessCode !== process.env.ADMIN_ACCESS_CODE) {
-      return res.status(400).json({ error: 'Nieprawidłowy kod dostępu dla administratora.' });
-    }
-
     let userCreated = false;
 
     // Rejestracja w MongoDB
@@ -34,8 +25,7 @@ router.post('/auth/register', async (req, res) => {
       const mongoUser = new MongoUser({
         username,
         email,
-        password: hashedPassword,
-        role,
+        password: hashedPassword
       });
       await mongoUser.save();
       userCreated = true;
@@ -44,7 +34,7 @@ router.post('/auth/register', async (req, res) => {
     // Rejestracja w MySQL
     if (process.env.DATABASE_TYPE === 'mysql' || process.env.DATABASE_TYPE === 'both') {
       const existingMySQLUser = await MySQLUser.findOne({
-        where: { [Op.or]: [{ username }, { email }] }, // Użycie Op.or
+        where: { [Op.or]: [{ username }, { email }] }
       });
       if (existingMySQLUser) {
         return res.status(400).json({ error: 'Użytkownik już istnieje.' });
@@ -54,8 +44,7 @@ router.post('/auth/register', async (req, res) => {
       const mysqlUser = await MySQLUser.create({
         username,
         email,
-        password: hashedPassword,
-        role,
+        password: hashedPassword
       });
       userCreated = true;
     }
@@ -102,8 +91,7 @@ router.post('/auth/login', async (req, res) => {
     const token = jwt.sign(
       {
         id: user._id || user.id,
-        username: user.username,
-        role: user.role,
+        username: user.username
       },
       process.env.JWT_SECRET || 'supersecretkey',
       { expiresIn: '1h' } // Token ważny przez 1 godzinę
@@ -115,8 +103,7 @@ router.post('/auth/login', async (req, res) => {
       user: {
         id: user._id || user.id,
         username: user.username,
-        email,
-        role: user.role,
+        email
       },
     });
   } catch (error) {

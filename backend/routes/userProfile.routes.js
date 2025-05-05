@@ -27,7 +27,6 @@ router.get('/profile', authenticateToken, async (req, res) => {
         id: userFromMongo?._id || userFromMySQL?.id,
         username: username,
         email: userFromMongo?.email || userFromMySQL?.email,
-        role: userFromMongo?.role || userFromMySQL?.role,
         profileData: userFromMongo?.profileData || {
           firstName: userFromMySQL?.firstName,
           lastName: userFromMySQL?.lastName,
