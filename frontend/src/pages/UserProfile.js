@@ -68,7 +68,6 @@ const ProfilePage = () => {
           setUserData({
             username: profileData.username,
             email: profileData.email,
-            role: profileData.role,
             firstName: profileData.profileData.firstName || '',
             lastName: profileData.profileData.lastName || '',
             dateOfBirth: profileData.profileData.dateOfBirth ? new Date(profileData.profileData.dateOfBirth).toISOString().split('T')[0] : '',
@@ -80,7 +79,6 @@ const ProfilePage = () => {
           setUserData({
             username: profileData.username,
             email: profileData.email,
-            role: profileData.role,
             firstName: profileData.firstName || '',
             lastName: profileData.lastName || '',
             dateOfBirth: profileData.dateOfBirth ? new Date(profileData.dateOfBirth).toISOString().split('T')[0] : '',
@@ -300,13 +298,6 @@ const profileFormik = useFormik({
                 disabled
                 margin="normal"
               />
-              <TextField
-                fullWidth
-                label="Rola"
-                value={userData.role === 'client' ? 'Klient' : userData.role === 'trainer' ? 'Trener' : 'Administrator'}
-                disabled
-                margin="normal"
-              />
               <Button 
                 startIcon={<LockIcon />}
                 variant="outlined" 
@@ -360,7 +351,12 @@ const profileFormik = useFormik({
                   }}
                 />
                 <FormControl fullWidth margin="normal">
-                  <InputLabel id="gender-label" sx={{ top: isEditing ? '0px' : '-8px' }}>Płeć</InputLabel>
+                  <InputLabel 
+                    id="gender-label" 
+                    shrink={Boolean(profileFormik.values.gender) || isEditing}
+                  >
+                    Płeć
+                  </InputLabel>
                   <Select
                     labelId="gender-label"
                     name="gender"
@@ -369,6 +365,7 @@ const profileFormik = useFormik({
                     error={profileFormik.touched.gender && Boolean(profileFormik.errors.gender)}
                     disabled={!isEditing}
                     label="Płeć"
+                    notched={Boolean(profileFormik.values.gender) || isEditing}
                   >
                     <MenuItem value="">Wybierz płeć</MenuItem>
                     <MenuItem value="male">Mężczyzna</MenuItem>
