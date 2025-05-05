@@ -13,7 +13,7 @@ const validationSchema = yup.object({
   password: yup.string().min(6, 'Hasło musi mieć co najmniej 6 znaków').required('Hasło jest wymagane'),
 });
 
-const LoginPage = ({ updateRole }) => {
+const LoginPage = ({ updateAuthStatus }) => {
   const navigate = useNavigate();
   const { showSnackbar } = useSnackbar();
 
@@ -25,7 +25,7 @@ const LoginPage = ({ updateRole }) => {
         const response = await api.post('/auth/login', values);
         localStorage.setItem('token', response.data.token); // Zapis tokena do LocalStorage
         
-        updateRole(); // Aktualizujemy rolę po zapisaniu tokena
+        updateAuthStatus(); // Aktualizujemy status logowania
         navigate('/dashboard'); // Przekierowanie do dashboardu
         showSnackbar('Zalogowano pomyślnie!', 'success');
       } catch (error) {

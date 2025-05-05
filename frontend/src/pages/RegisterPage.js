@@ -4,10 +4,6 @@ import {
   Button,
   TextField,
   Typography,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
 } from '@mui/material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -15,19 +11,12 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { motion } from 'framer-motion';
 import BackgroundIcons from '../components/BackgroundIcons';
-import { useSnackbar } from '../contexts/SnackbarContext'; // Dodany import kontekstu Snackbar
+import { useSnackbar } from '../contexts/SnackbarContext';
 
 const validationSchema = yup.object({
   username: yup.string().required('Nazwa użytkownika jest wymagana'),
   email: yup.string().email('Nieprawidłowy email').required('Email jest wymagany'),
   password: yup.string().min(6, 'Hasło musi mieć co najmniej 6 znaków').required('Hasło jest wymagane'),
-  role: yup.string().required('Wybór roli jest wymagany'),
-  accessCode: yup.string().when('role', (role, schema) => {
-    if (role === 'trainer' || role === 'admin') {
-      return schema.required('Kod dostępu jest wymagany dla tej roli');
-    }
-    return schema.notRequired(); 
-  }),
 });
 
 const RegisterPage = () => {
@@ -39,8 +28,6 @@ const RegisterPage = () => {
       username: '',
       email: '',
       password: '',
-      role: 'client', // Domyślna wartość dla roli
-      accessCode: '',
     },
     validationSchema,
     onSubmit: async (values) => {
@@ -116,38 +103,6 @@ const RegisterPage = () => {
             error={formik.touched.password && Boolean(formik.errors.password)}
             helperText={formik.touched.password && formik.errors.password}
           />
-          <FormControl fullWidth margin="normal">
-            <InputLabel id="role-label" sx={{ top: '-8px' }}>
-              Rola
-            </InputLabel>
-            <Select
-              labelId="role-label"
-              name="role"
-              value={formik.values.role}
-              onChange={formik.handleChange}
-              error={formik.touched.role && Boolean(formik.errors.role)}
-              sx={{
-                textAlign: 'left', // Wyśrodkowanie tekstu w Select
-                height: '56px', // Dopasowanie wysokości
-              }}
-            >
-              <MenuItem value="client">Klient</MenuItem>
-              <MenuItem value="trainer">Trener</MenuItem>
-              <MenuItem value="admin">Admin</MenuItem>
-            </Select>
-          </FormControl>
-          {['trainer', 'admin'].includes(formik.values.role) && (
-            <TextField
-              fullWidth
-              label="Kod dostępu"
-              name="accessCode"
-              margin="normal"
-              value={formik.values.accessCode}
-              onChange={formik.handleChange}
-              error={formik.touched.accessCode && Boolean(formik.errors.accessCode)}
-              helperText={formik.touched.accessCode && formik.errors.accessCode}
-            />
-          )}
           <Button
             fullWidth
             type="submit"

@@ -1,13 +1,21 @@
-export const getUserRole = () => {
+export const isAuthenticated = () => {
   const token = localStorage.getItem('token');
-  if (!token) return null;
+  if (!token) return false;
 
   try {
+    // Sprawdzamy, czy token nie wygasł
     const payload = JSON.parse(atob(token.split('.')[1])); // Dekodowanie payloadu JWT
-    console.log('Decoded payload:', payload); // Debug: logujemy payload
-    return payload.role; // Zwracamy rolę użytkownika
+    const expirationTime = payload.exp * 1000; // Konwersja na milisekundy
+    
+    if (Date.now() >= expirationTime) {
+      localStorage.removeItem('token'); // Usuwamy wygasły token
+      return false;
+    }
+    
+    return true;
   } catch (error) {
     console.error('Błąd dekodowania tokena:', error);
-    return null;
+    localStorage.removeItem('token'); // Usuwamy nieprawidłowy token
+    return false;
   }
 };
