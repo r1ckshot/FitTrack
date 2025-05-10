@@ -8,6 +8,7 @@ import ProgressPage from './pages/ProgressPage';
 import TrainingPlansPage from './pages/TrainingPlansPage';
 import DietPlansPage from './pages/DietPlansPage';
 import ProfilePage from './pages/UserProfile';
+import AnalyticsPage from './pages/AnalyticsPage';
 import { SnackbarProvider } from './contexts/SnackbarContext';
 import { isAuthenticated } from './utils/auth';
 
@@ -54,6 +55,10 @@ const App = () => {
           <Route
             path="/profile"
             element={isLoggedIn ? <ProfilePage /> : <Navigate to="/login" replace />}
+          />
+          <Route
+            path="/analytics"
+            element={isLoggedIn ? <AnalyticsPage /> : <Navigate to="/login" replace />}
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
