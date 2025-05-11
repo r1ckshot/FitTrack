@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Box,
   Button,
@@ -10,7 +9,7 @@ import * as yup from 'yup';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { motion } from 'framer-motion';
-import BackgroundIcons from '../components/BackgroundIcons';
+import BackgroundIcons from '../components/common/BackgroundIcons';
 import { useSnackbar } from '../contexts/SnackbarContext';
 
 const validationSchema = yup.object({

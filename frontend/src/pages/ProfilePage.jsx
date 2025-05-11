@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -18,14 +18,14 @@ import {
   Grid,
   Paper,
   Divider,
-  IconButton
 } from '@mui/material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import Navbar from '../components/common/Navbar';
 import { motion } from 'framer-motion';
-import BackgroundIcons from '../components/BackgroundIcons';
+import BackgroundIcons from '../components/common/BackgroundIcons';
 import { Edit as EditIcon, Save as SaveIcon, Lock as LockIcon, Delete as DeleteIcon } from '@mui/icons-material';
 
 // Schema walidacji dla głównych danych profilu
@@ -90,10 +90,10 @@ const ProfilePage = () => {
         setLoading(false);
       } catch (error) {
         console.error('Błąd podczas pobierania danych profilu:', error);
-        setSnackbar({ 
-          open: true, 
-          message: error.response?.data?.error || 'Nie udało się pobrać danych profilu', 
-          severity: 'error' 
+        setSnackbar({
+          open: true,
+          message: error.response?.data?.error || 'Nie udało się pobrać danych profilu',
+          severity: 'error'
         });
         setLoading(false);
       }
@@ -101,43 +101,43 @@ const ProfilePage = () => {
 
     fetchUserProfile();
   }, []);
-  
- // Formik do obsługi formularza profilu
-const profileFormik = useFormik({
-  enableReinitialize: true,
-  initialValues: {
-    firstName: userData?.firstName || '',
-    lastName: userData?.lastName || '',
-    dateOfBirth: userData?.dateOfBirth || '',
-    gender: userData?.gender || '',
-    weight: userData?.weight || '',
-    height: userData?.height || ''
-  },
-  validationSchema: profileValidationSchema,
-  onSubmit: async (values) => {
-    try {
-      // Dodajemy logowanie dla debugowania
-      console.log('Wartości wysyłane do API:', values);
-      
-      await api.put('/profile', values);
-      setIsEditing(false);
-      setSnackbar({ open: true, message: 'Profil został zaktualizowany pomyślnie!', severity: 'success' });
-      
-      // Aktualizacja danych lokalnie
-      setUserData({
-        ...userData,
-        ...values
-      });
-    } catch (error) {
-      console.error('Błąd aktualizacji profilu:', error.response?.data || error);
-      setSnackbar({ 
-        open: true, 
-        message: error.response?.data?.error || 'Błąd podczas aktualizacji profilu', 
-        severity: 'error' 
-      });
-    }
-  },
-});
+
+  // Formik do obsługi formularza profilu
+  const profileFormik = useFormik({
+    enableReinitialize: true,
+    initialValues: {
+      firstName: userData?.firstName || '',
+      lastName: userData?.lastName || '',
+      dateOfBirth: userData?.dateOfBirth || '',
+      gender: userData?.gender || '',
+      weight: userData?.weight || '',
+      height: userData?.height || ''
+    },
+    validationSchema: profileValidationSchema,
+    onSubmit: async (values) => {
+      try {
+        // Dodajemy logowanie dla debugowania
+        console.log('Wartości wysyłane do API:', values);
+
+        await api.put('/profile', values);
+        setIsEditing(false);
+        setSnackbar({ open: true, message: 'Profil został zaktualizowany pomyślnie!', severity: 'success' });
+
+        // Aktualizacja danych lokalnie
+        setUserData({
+          ...userData,
+          ...values
+        });
+      } catch (error) {
+        console.error('Błąd aktualizacji profilu:', error.response?.data || error);
+        setSnackbar({
+          open: true,
+          message: error.response?.data?.error || 'Błąd podczas aktualizacji profilu',
+          severity: 'error'
+        });
+      }
+    },
+  });
 
   // Formik do obsługi zmiany hasła
   const passwordFormik = useFormik({
@@ -157,10 +157,10 @@ const profileFormik = useFormik({
         setSnackbar({ open: true, message: 'Hasło zostało zmienione pomyślnie!', severity: 'success' });
         passwordFormik.resetForm();
       } catch (error) {
-        setSnackbar({ 
-          open: true, 
-          message: error.response?.data?.error || 'Błąd podczas zmiany hasła', 
-          severity: 'error' 
+        setSnackbar({
+          open: true,
+          message: error.response?.data?.error || 'Błąd podczas zmiany hasła',
+          severity: 'error'
         });
       }
     }
@@ -177,10 +177,10 @@ const profileFormik = useFormik({
       // Przekieruj do strony logowania po krótkim opóźnieniu
       setTimeout(() => navigate('/'), 2000);
     } catch (error) {
-      setSnackbar({ 
-        open: true, 
-        message: error.response?.data?.error || 'Błąd podczas usuwania konta', 
-        severity: 'error' 
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.error || 'Błąd podczas usuwania konta',
+        severity: 'error'
       });
       setDeleteDialog(false);
     }
@@ -239,9 +239,9 @@ const profileFormik = useFormik({
             <Typography variant="h4">Twój Profil</Typography>
             <Box>
               {!isEditing ? (
-                <Button 
-                  startIcon={<EditIcon />} 
-                  variant="contained" 
+                <Button
+                  startIcon={<EditIcon />}
+                  variant="contained"
                   color="primary"
                   onClick={() => setIsEditing(true)}
                   sx={{
@@ -253,9 +253,9 @@ const profileFormik = useFormik({
                   Edytuj profil
                 </Button>
               ) : (
-                <Button 
-                  startIcon={<SaveIcon />} 
-                  variant="contained" 
+                <Button
+                  startIcon={<SaveIcon />}
+                  variant="contained"
                   color="primary"
                   onClick={profileFormik.handleSubmit}
                   sx={{
@@ -267,9 +267,9 @@ const profileFormik = useFormik({
                   Zapisz zmiany
                 </Button>
               )}
-              <Button 
+              <Button
                 startIcon={<DeleteIcon />}
-                variant="outlined" 
+                variant="outlined"
                 color="error"
                 onClick={() => setDeleteDialog(true)}
               >
@@ -298,9 +298,9 @@ const profileFormik = useFormik({
                 disabled
                 margin="normal"
               />
-              <Button 
+              <Button
                 startIcon={<LockIcon />}
-                variant="outlined" 
+                variant="outlined"
                 color="primary"
                 onClick={() => setPasswordDialog(true)}
                 sx={{ mt: 2 }}
@@ -351,8 +351,8 @@ const profileFormik = useFormik({
                   }}
                 />
                 <FormControl fullWidth margin="normal">
-                  <InputLabel 
-                    id="gender-label" 
+                  <InputLabel
+                    id="gender-label"
                     shrink={Boolean(profileFormik.values.gender) || isEditing}
                   >
                     Płeć
@@ -447,8 +447,8 @@ const profileFormik = useFormik({
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setPasswordDialog(false)}>Anuluj</Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               variant="contained"
               sx={{
                 backgroundColor: '#4CAF50',

@@ -1,11 +1,10 @@
-import React from 'react';
 import { Box, Button, TextField, Typography } from '@mui/material';
 import { useFormik } from 'formik';
 import { useNavigate } from 'react-router-dom';
 import * as yup from 'yup';
 import api from '../services/api';
 import { motion } from 'framer-motion';
-import BackgroundIcons from '../components/BackgroundIcons';
+import BackgroundIcons from '../components/common/BackgroundIcons';
 import { useSnackbar } from '../contexts/SnackbarContext'; 
 
 const validationSchema = yup.object({
