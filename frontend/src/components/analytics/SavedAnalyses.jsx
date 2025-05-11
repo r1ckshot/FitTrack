@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Grid, 
-  Card, 
-  CardContent, 
-  CardActions, 
-  IconButton, 
-  Button, 
-  Dialog, 
-  DialogActions, 
-  DialogContent, 
-  DialogTitle, 
+import {
+  Box,
+  Typography,
+  Grid,
+  Card,
+  CardContent,
+  CardActions,
+  IconButton,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   TextField,
   Tooltip,
   Chip,
@@ -23,7 +23,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import EventIcon from '@mui/icons-material/Event';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
-import api from '../../services/api'; 
+import api from '../../services/api';
+import AnalysesImportExport from '../../components/import-export/AnalysesImportExport';
 
 const SavedAnalyses = ({ analyses, onLoad, onUpdate, onDelete }) => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -32,7 +33,7 @@ const SavedAnalyses = ({ analyses, onLoad, onUpdate, onDelete }) => {
   const [newName, setNewName] = useState('');
   const [loading, setLoading] = useState(false);
   const [analysisTypesMap, setAnalysisTypesMap] = useState({});
-  const [key, setKey] = useState(0); 
+  const [key, setKey] = useState(0);
 
   // Pobieranie typów analiz z API przy inicjalizacji komponentu
   useEffect(() => {
@@ -50,10 +51,10 @@ const SavedAnalyses = ({ analyses, onLoad, onUpdate, onDelete }) => {
         console.error('Błąd podczas pobierania typów analiz:', error);
       }
     };
-
+    
     fetchAnalysisTypes();
   }, []);
-
+  
   // Otwieranie dialogu edycji nazwy
   const handleEditOpen = (analysis) => {
     setSelectedAnalysis(analysis);
@@ -74,7 +75,7 @@ const SavedAnalyses = ({ analyses, onLoad, onUpdate, onDelete }) => {
     setSelectedAnalysis(null);
   };
 
-   // Uniwersalna funkcja do pobierania ID analizy
+  // Uniwersalna funkcja do pobierania ID analizy
   const getAnalysisId = (analysis) => {
     if (analysis._id) return analysis._id;
     if (analysis.id) return analysis.id;
@@ -89,7 +90,7 @@ const SavedAnalyses = ({ analyses, onLoad, onUpdate, onDelete }) => {
         console.error('Nie można znaleźć ID analizy:', selectedAnalysis);
         return;
       }
-      
+
       setLoading(true);
       await onUpdate(analysisId, newName);
       setLoading(false);
@@ -106,7 +107,7 @@ const SavedAnalyses = ({ analyses, onLoad, onUpdate, onDelete }) => {
         console.error('Nie można znaleźć ID analizy:', selectedAnalysis);
         return;
       }
-      
+
       setLoading(true);
       await onDelete(analysisId);
       setLoading(false);
@@ -122,7 +123,7 @@ const SavedAnalyses = ({ analyses, onLoad, onUpdate, onDelete }) => {
       console.error('Nie można znaleźć ID analizy:', analysis);
       return;
     }
-    
+
     setLoading(true);
     await onLoad(analysisId);
     setLoading(false);
@@ -175,7 +176,14 @@ const SavedAnalyses = ({ analyses, onLoad, onUpdate, onDelete }) => {
   const getAnalysisTypeName = (type) => {
     return analysisTypesMap[type] || "Nieznany typ";
   };
-  
+
+  const handleImportSuccess = () => {
+  // Powiadom komponent nadrzędny, że import się powiódł
+  onUpdate(); // Wywołujemy bez parametrów, aby zasygnalizować potrzebę odświeżenia listy
+  resetAnimation(); // Opcjonalnie resetujemy animację
+};
+
+
   return (
     <Box sx={{ width: '100%' }}>
       {loading && (
@@ -198,18 +206,35 @@ const SavedAnalyses = ({ analyses, onLoad, onUpdate, onDelete }) => {
               p: 3,
               textAlign: 'center',
               border: '1px dashed #4CAF50',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: 2,
             }}
           >
+
             <Typography variant="h6" gutterBottom>
               Nie masz jeszcze żadnych zapisanych analiz
             </Typography>
             <Typography variant="body1">
               Utwórz nową analizę, aby zobaczyć ją tutaj.
             </Typography>
+
+            <AnalysesImportExport
+              analysisId={null}
+              onImportSuccess={handleImportSuccess}
+            />
           </Box>
         </motion.div>
       ) : (
         <AnimatePresence>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3, gap: 2 }}>
+            <AnalysesImportExport
+              analysisId={null}
+              onImportSuccess={handleImportSuccess}
+            />
+          </Box>
           <Grid container spacing={3} key={`analyses-grid-${key}`}>
             {analyses.map((analysis, index) => (
               <Grid item xs={12} sm={6} md={4} key={`${getAnalysisId(analysis) || index}-${key}`}>
@@ -260,9 +285,9 @@ const SavedAnalyses = ({ analyses, onLoad, onUpdate, onDelete }) => {
                           </Typography>
                         </Tooltip>
                       </Box>
-                      
+
                       <Box sx={{ mb: 2 }}>
-                        <Chip 
+                        <Chip
                           label={getAnalysisTypeName(analysis.analysisType)}
                           size="small"
                           sx={{
@@ -273,23 +298,23 @@ const SavedAnalyses = ({ analyses, onLoad, onUpdate, onDelete }) => {
                           }}
                         />
                       </Box>
-                      
-                      <Typography 
-                        variant="body2" 
+
+                      <Typography
+                        variant="body2"
                         color="text.secondary"
                         sx={{ mb: 1 }}
                       >
                         Kraj: {analysis.country?.name || analysis.countryName || 'Brak danych'}
                       </Typography>
-                      
-                      <Typography 
-                        variant="body2" 
+
+                      <Typography
+                        variant="body2"
                         color="text.secondary"
                         sx={{ mb: 1 }}
                       >
                         Okres: {analysis.period?.start || analysis.periodStart} - {analysis.period?.end || analysis.periodEnd}
                       </Typography>
-                      
+
                       <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
                         <EventIcon sx={{ fontSize: 16, color: 'text.secondary', mr: 0.5 }} />
                         <Typography variant="body2" color="text.secondary">
@@ -297,7 +322,7 @@ const SavedAnalyses = ({ analyses, onLoad, onUpdate, onDelete }) => {
                         </Typography>
                       </Box>
                     </CardContent>
-                    
+
                     <CardActions sx={{ justifyContent: 'space-between', p: 2 }}>
                       <Box>
                         <Tooltip title="Zmień nazwę">
@@ -319,7 +344,15 @@ const SavedAnalyses = ({ analyses, onLoad, onUpdate, onDelete }) => {
                           </IconButton>
                         </Tooltip>
                       </Box>
-                      
+
+                      <Box sx={{ ml: 1 }}>
+                        <AnalysesImportExport
+                          analysisId={getAnalysisId(analysis)}
+                          showImport={false}
+                          onImportSuccess={handleImportSuccess}
+                        />
+                      </Box>
+
                       <Button
                         size="small"
                         variant="outlined"
@@ -361,9 +394,9 @@ const SavedAnalyses = ({ analyses, onLoad, onUpdate, onDelete }) => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Anuluj</Button>
-          <Button 
-            onClick={handleUpdateName} 
-            variant="contained" 
+          <Button
+            onClick={handleUpdateName}
+            variant="contained"
             color="primary"
             disabled={!newName.trim()}
           >

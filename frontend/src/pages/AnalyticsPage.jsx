@@ -19,7 +19,7 @@ const AnalyticsPage = () => {
   const [currentAnalysis, setCurrentAnalysis] = useState(null);
   const [savedAnalyses, setSavedAnalyses] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [refreshSavedAnalyses, setRefreshSavedAnalyses] = useState(0); 
+  const [refreshSavedAnalyses, setRefreshSavedAnalyses] = useState(0);
   const { showSnackbar } = useSnackbar();
 
   // Pobieranie listy krajów
@@ -64,7 +64,7 @@ const AnalyticsPage = () => {
   useEffect(() => {
     const fetchAvailableYears = async () => {
       if (!selectedCountry || !selectedAnalysisType) return;
-      
+
       try {
         const response = await api.get(
           `/analytics/available-years?countryCode=${selectedCountry.code}&analysisType=${selectedAnalysisType}`
@@ -162,6 +162,13 @@ const AnalyticsPage = () => {
 
   const handleAnalysisUpdate = async (analysisId, newName) => {
     try {
+      // Jeżeli nic nie jest przekazane, to oznacza, że chcemy tylko odświeżyć listę
+      if (!analysisId && !newName) {
+        setRefreshSavedAnalyses(prev => prev + 1);
+        return;
+      }
+
+      // W przeciwnym razie aktualizujemy nazwę analizy
       const response = await api.put(`/analyses/${analysisId}`, { name: newName });
       if (response.data.success) {
         showSnackbar('Nazwa analizy została zaktualizowana', 'success');
@@ -232,9 +239,9 @@ const AnalyticsPage = () => {
             Analiza Danych Zdrowotnych i Ekonomicznych
           </Typography>
 
-          <Tabs 
-            value={tabValue} 
-            onChange={handleTabChange} 
+          <Tabs
+            value={tabValue}
+            onChange={handleTabChange}
             centered
             sx={{ mb: 2 }}
           >
@@ -244,8 +251,8 @@ const AnalyticsPage = () => {
           </Tabs>
 
           {tabValue === 0 && (
-            <AnalysisForm 
-              countries={countries} 
+            <AnalysisForm
+              countries={countries}
               analysisTypes={analysisTypes}
               availableYears={availableYears}
               onCountrySelect={handleCountrySelect}
@@ -256,18 +263,18 @@ const AnalyticsPage = () => {
           )}
 
           {tabValue === 1 && currentAnalysis && (
-            <AnalysisResults 
+            <AnalysisResults
               analysis={currentAnalysis}
             />
           )}
 
           {tabValue === 2 && (
-            <SavedAnalyses 
+            <SavedAnalyses
               analyses={savedAnalyses}
               onLoad={handleAnalysisLoad}
               onUpdate={handleAnalysisUpdate}
               onDelete={handleAnalysisDelete}
-              key={`saved-analyses-${refreshSavedAnalyses}`} 
+              key={`saved-analyses-${refreshSavedAnalyses}`}
             />
           )}
         </motion.div>

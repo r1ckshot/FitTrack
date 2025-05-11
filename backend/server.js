@@ -61,6 +61,9 @@ app.use('/api', plansImportExportRoutes); // Trasy dla importu/eksportu planów
 const analyticsRoutes = require('./routes/analytics.routes');
 app.use('/api', analyticsRoutes); // Trasy dla analiz
 
+const analysisImportExportRoutes = require('./routes/analysesImportExport.routes');
+app.use('/api', analysisImportExportRoutes); // Trasy dla importu/eksportu analiz
+
 // Ustawienie portu i uruchomienie serwera
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
