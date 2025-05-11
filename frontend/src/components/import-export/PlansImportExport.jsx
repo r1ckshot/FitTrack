@@ -20,10 +20,10 @@ import {
 } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import { useSnackbar } from '../contexts/SnackbarContext';
-import api from '../services/api';
+import { useSnackbar } from '../../contexts/SnackbarContext';
+import api from '../../services/api';
 
-const ImportExportComponent = ({ planType, planId, onImportSuccess, showImport = true, showExport = true }) => {
+const PlansImportExport = ({ planType, planId, onImportSuccess, showImport = true, showExport = true }) => {
   // planType powinno być 'training' lub 'diet'
 
   const [importDialog, setImportDialog] = useState(false);
@@ -404,4 +404,4 @@ const ImportExportComponent = ({ planType, planId, onImportSuccess, showImport =
   );
 };
 
-export default ImportExportComponent;
+export default PlansImportExport;

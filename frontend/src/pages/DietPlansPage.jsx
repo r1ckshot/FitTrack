@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Box, Typography, Button, Grid, Card, CardContent, CardActions, IconButton, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Chip, Tooltip } from '@mui/material';
 import { motion } from 'framer-motion';
 import AddIcon from '@mui/icons-material/Add';
@@ -6,11 +6,11 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
-import BackgroundIcons from '../components/BackgroundIcons';
-import Navbar from '../components/Navbar';
-import DietPlanForm from '../components/DietPlanForm';
-import DietPlanDetails from '../components/DietPlanDetails';
-import ImportExportComponent from '../components/ImportExportComponent';
+import BackgroundIcons from '../components/common/BackgroundIcons';
+import Navbar from '../components/common/Navbar';
+import DietPlanForm from '../components/diets/DietPlanForm';
+import DietPlanDetails from '../components/diets/DietPlanDetails';
+import PlansImportExport from '../components/import-export/PlansImportExport';
 import api from '../services/api';
 import { useSnackbar } from '../contexts/SnackbarContext';
 
@@ -175,7 +175,7 @@ const DietPlansPage = () => {
 
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3, gap: 2 }}>
           {/* Dodajemy komponent importu/eksportu dla strony z planami */}
-          <ImportExportComponent
+          <PlansImportExport
             planType="diet"
             planId={null} // Brak ID, bo to import/eksport na poziomie strony
             onImportSuccess={fetchPlans}
@@ -240,7 +240,7 @@ const DietPlansPage = () => {
                 </Button>
 
                 {/* Komponent ImportExport dla pustej strony */}
-                <ImportExportComponent
+                <PlansImportExport
                   planType="diet"
                   planId={null}
                   onImportSuccess={fetchPlans}
@@ -363,7 +363,7 @@ const DietPlansPage = () => {
 
                       {/* Dodajemy możliwość eksportu dla konkretnego planu */}
                       <Box sx={{ ml: 1 }}>
-                        <ImportExportComponent
+                        <PlansImportExport
                           planType="diet"
                           planId={getPlanId(plan)}
                           showImport={false}

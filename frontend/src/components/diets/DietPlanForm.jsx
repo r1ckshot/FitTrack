@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Box, TextField, Button, Typography, CircularProgress, Tabs, Tab, Divider } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import SaveIcon from '@mui/icons-material/Save';
-import api from '../services/api';
+import api from '../../services/api';
 import DietDayForm from './DietDayForm';
-import { useSnackbar } from '../contexts/SnackbarContext'; // Dodano import Snackbar
+import { useSnackbar } from '../../contexts/SnackbarContext';
 
 const DietPlanForm = ({ plan, onClose }) => {
   const [formData, setFormData] = useState({

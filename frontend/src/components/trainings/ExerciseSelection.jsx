@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -25,14 +25,13 @@ import {
 import { motion } from 'framer-motion';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SearchIcon from '@mui/icons-material/Search';
-import FilterListIcon from '@mui/icons-material/FilterList';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import {
   getAllExercises,
   getBodyParts,
   getEquipmentList,
   getTargetList
-} from '../services/exerciseService';
+} from '../../services/exerciseService';
 
 const ExerciseSelection = ({ onExerciseSelect, onCancel, currentExercise }) => {
   const [step, setStep] = useState(1); // User's current step in the process

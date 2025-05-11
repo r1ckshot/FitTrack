@@ -3,11 +3,11 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import Dashboard from './pages/ClientDashboard'; // Używamy jednego dashboardu dla wszystkich
+import DashboardPage from './pages/DashboardPage';
 import ProgressPage from './pages/ProgressPage';
 import TrainingPlansPage from './pages/TrainingPlansPage';
 import DietPlansPage from './pages/DietPlansPage';
-import ProfilePage from './pages/UserProfile';
+import ProfilePage from './pages/ProfilePage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import { SnackbarProvider } from './contexts/SnackbarContext';
 import { isAuthenticated } from './utils/auth';
@@ -38,7 +38,7 @@ const App = () => {
           <Route path="/login" element={<LoginPage updateAuthStatus={updateAuthStatus} />} />
           <Route
             path="/dashboard"
-            element={isLoggedIn ? <Dashboard /> : <Navigate to="/login" replace />}
+            element={isLoggedIn ? <DashboardPage /> : <Navigate to="/login" replace />}
           />
           <Route
             path="/progress"

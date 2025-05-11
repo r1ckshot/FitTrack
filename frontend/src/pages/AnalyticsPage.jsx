@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Box, Typography, Tabs, Tab } from '@mui/material';
 import { motion } from 'framer-motion';
 import api from '../services/api';
-import Navbar from '../components/Navbar';
-import BackgroundIcons from '../components/BackgroundIcons';
+import Navbar from '../components/common/Navbar';
+import BackgroundIcons from '../components/common/BackgroundIcons';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import AnalysisForm from '../components/analytics/AnalysisForm';
 import AnalysisResults from '../components/analytics/AnalysisResults';

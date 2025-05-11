@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Box, TextField, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton } from '@mui/material';
 import { Delete, Edit } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import api from '../services/api';
-import Navbar from '../components/Navbar';
-import BackgroundIcons from '../components/BackgroundIcons';
-import { useSnackbar } from '../contexts/SnackbarContext'; // Import hooka do Snackbara
+import Navbar from '../components/common/Navbar';
+import BackgroundIcons from '../components/common/BackgroundIcons';
+import { useSnackbar } from '../contexts/SnackbarContext'; 
 
 const ProgressPage = () => {
   const [progressData, setProgressData] = useState([]);

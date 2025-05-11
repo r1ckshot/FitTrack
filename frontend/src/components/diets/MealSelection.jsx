@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -10,25 +10,18 @@ import {
   CircularProgress,
   Chip,
   Slider,
-  IconButton,
   TextField,
   InputAdornment,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  FormControl,
-  InputLabel,
-  Input,
-  FormHelperText
 } from '@mui/material';
 import { motion } from 'framer-motion';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SearchIcon from '@mui/icons-material/Search';
-import FilterListIcon from '@mui/icons-material/FilterList';
 import TuneIcon from '@mui/icons-material/Tune';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import { getRecipesByNutrients, filterRecipes, clearRecipesCache } from '../services/dietService';
+import { getRecipesByNutrients, filterRecipes, clearRecipesCache } from '../../services/dietService';
 
 const MealSelection = ({ onMealSelect, onCancel, currentMeal }) => {
   // Podstawowe stany

@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Box, TextField, Button, Typography, CircularProgress, Tabs, Tab, Divider, IconButton } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import SaveIcon from '@mui/icons-material/Save';
-import api from '../services/api';
+import api from '../../services/api';
 import TrainingDayForm from './TrainingDayForm';
-import { useSnackbar } from '../contexts/SnackbarContext'; // Zaimportowany kontekst Snackbar
+import { useSnackbar } from '../../contexts/SnackbarContext';
 
 const TrainingPlanForm = ({ plan, onClose }) => {
   const [formData, setFormData] = useState({
