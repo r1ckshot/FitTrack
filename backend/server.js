@@ -37,8 +37,6 @@ app.get('/', (req, res) => {
 });
 
 // Import tras
-//const userRoutes = require('./routes/user.routes');
-//app.use('/api', userRoutes);
 
 const authRoutes = require('./routes/auth.routes');
 app.use('/api', authRoutes);
@@ -52,8 +50,8 @@ app.use('/api', trainingPlansRoutes); // Trasy dla Training Plans
 const dietPlansRoutes = require('./routes/dietPlans.routes');
 app.use('/api', dietPlansRoutes); // Trasy dla Diet Plans
 
-const userProfileRoutes = require('./routes/userProfile.routes');
-app.use('/api', userProfileRoutes); 
+const profile = require('./routes/profile.routes');
+app.use('/api', profile); 
 
 const plansImportExportRoutes = require('./routes/plansImportExport.routes');
 app.use('/api', plansImportExportRoutes); // Trasy dla importu/eksportu planów
