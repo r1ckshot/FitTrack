@@ -3,7 +3,7 @@ import { Box, Typography, Grid, Card, CardActionArea, useMediaQuery, useTheme } 
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import BarChartIcon from '@mui/icons-material/BarChart';
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import QueryStatsIcon from '@mui/icons-material/QueryStats';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import BackgroundIcons from '../components/common/BackgroundIcons';
@@ -66,6 +66,21 @@ const DashboardPage = () => {
     }),
   };
 
+  // Konfiguracja animacji dla przycisków
+  const buttonVariants = {
+    hidden: { opacity: 0, y: -20 },
+    visible: (i) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: i * 0.2,
+        duration: 0.6,
+        type: "spring",
+        stiffness: 100
+      },
+    }),
+  };
+
   const cardGroups = [
     {
       title: "Treningi i Dieta",
@@ -87,7 +102,7 @@ const DashboardPage = () => {
       ]
     },
     {
-      title: "Analiza i Postępy",
+      title: "Postępy i Analiza",
       cards: [
         {
           icon: <BarChartIcon sx={{ fontSize: '50px', color: '#8E24AA', mb: 2 }} />,
@@ -97,7 +112,7 @@ const DashboardPage = () => {
           color: '#8E24AA'
         },
         {
-          icon: <AttachMoneyIcon sx={{ fontSize: '50px', color: '#EFBF04', mb: 2 }} />,
+          icon: <QueryStatsIcon sx={{ fontSize: '50px', color: '#EFBF04', mb: 2 }} />,
           title: 'Moje Analizy',
           description: 'Analiza związku zdrowia z ekonomią.',
           path: '/analytics',
@@ -115,33 +130,46 @@ const DashboardPage = () => {
           <Box sx={{
             display: 'flex',
             justifyContent: 'center',
-            mb: 2,
+            mb: 4,
             width: '100%',
-            maxWidth: '600px',
+            maxWidth: '400px',
             mx: 'auto'
           }}>
             {cardGroups.map((group, index) => (
-              <Box
+              <motion.div
                 key={index}
-                sx={{
-                  px: { xs: 1.5, sm: 2 },
-                  py: 1,
-                  mx: { xs: 0.5, sm: 1 },
-                  borderRadius: '20px',
-                  cursor: 'pointer',
-                  bgcolor: index === activeStep ? '#4CAF50' : 'rgba(255, 255, 255, 0.7)',
-                  color: index === activeStep ? 'white' : '#424242',
-                  fontWeight: index === activeStep ? 'bold' : 'normal',
-                  transition: 'all 0.3s ease',
-                  boxShadow: index === activeStep ? '0 2px 8px rgba(0,0,0,0.2)' : 'none',
-                  flex: 1,
-                  textAlign: 'center',
-                  fontSize: { xs: '0.9rem', sm: '1rem' }
-                }}
-                onClick={() => handleStepChange(index)}
+                custom={index}
+                initial="hidden"
+                animate="visible"
+                variants={buttonVariants}
+                whileHover={{ scale: 1.05, y: -5 }}
+                whileTap={{ scale: 0.95 }}
+                style={{ flex: 1 }}
               >
-                {group.title}
-              </Box>
+                <Box
+                  sx={{
+                    px: { xs: 1.5, sm: 2 },
+                    py: 1,
+                    mx: { xs: 0.5, sm: 1 },
+                    borderRadius: '20px',
+                    cursor: 'pointer',
+                    bgcolor: index === activeStep ? '#4CAF50' : 'rgba(255, 255, 255, 0.7)',
+                    color: index === activeStep ? 'white' : '#424242',
+                    fontWeight: index === activeStep ? 'bold' : 'normal',
+                    transition: 'all 0.3s ease',
+                    boxShadow: index === activeStep ? '0 2px 8px rgba(0,0,0,0.2)' : 'none',
+                    textAlign: 'center',
+                    fontSize: { xs: '0.9rem', sm: '1rem' },
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                  onClick={() => handleStepChange(index)}
+                >
+                  {group.title}
+                </Box>
+              </motion.div>
             ))}
           </Box>
 
@@ -256,25 +284,6 @@ const DashboardPage = () => {
         {/* Tło z ikonkami */}
         <BackgroundIcons />
 
-        <motion.div
-          initial={{ y: -200, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 1 }}
-          style={{ textAlign: 'center', zIndex: 1 }}
-        >
-          <Typography
-            variant="h4"
-            sx={{
-              color: '#ffffff',
-              fontWeight: 700,
-              mb: 2,
-              textShadow: '0px 4px 8px rgba(0,0,0,0.4)',
-            }}
-          >
-            Witaj w swoim Dashboardzie
-          </Typography>
-        </motion.div>
-
         {/* Karty z funkcjonalnościami */}
         {renderCardGroups()}
 
@@ -288,7 +297,6 @@ const DashboardPage = () => {
             boxShadow: '0px 6px 20px rgba(0, 0, 0, 0.15)',
             padding: { xs: '15px', sm: '25px' },
             zIndex: 1,
-            marginTop: '10px',
           }}
         >
           <Typography

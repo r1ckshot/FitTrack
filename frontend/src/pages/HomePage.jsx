@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import BarChartIcon from '@mui/icons-material/BarChart';
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import QueryStatsIcon from '@mui/icons-material/QueryStats';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import BackgroundIcons from '../components/common/BackgroundIcons';
@@ -34,15 +34,15 @@ const HomePage = () => {
     },
     {
       icon: <BarChartIcon sx={{ fontSize: '40px', color: '#8E24AA', mb: 2 }} />,
-      title: 'Śledź Postępy',
+      title: 'Postępy',
       description: [
         'Monitoruj swoje wyniki.',
         'Analizuj zmiany na wykresach.'
       ]
     },
     {
-      icon: <AttachMoneyIcon sx={{ fontSize: '40px', color: '#EFBF04', mb: 2 }} />,
-      title: 'Rób Analizy',
+      icon: <QueryStatsIcon sx={{ fontSize: '40px', color: '#EFBF04', mb: 2 }} />,
+      title: 'Analizy',
       description: [
         'Dokonaj analizy zdrowia z ekomomią.',
         'Wybierz interesujące Cię kraje i okresy czasu.',
@@ -97,7 +97,7 @@ const HomePage = () => {
             alignItems: 'center',
           }}
         >
-          {/* Obrazek z animowanym gradientem obramowania */}
+          {/* Obrazek z animowanym efektem błysku obramowania */}
           <Box
             component="img"
             src="https://cdn.prod.website-files.com/6367f8198bef742a30d18cba/63ada715a1f81e20c820e8bb_wDpzFbIyPTEF_abBbSYiH5FGFfAB35sepoNRNCERqu8-p-800.png"
@@ -107,19 +107,25 @@ const HomePage = () => {
               objectFit: 'cover',
               borderRadius: '8px',
               boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.2)',
-              border: '3px solid',
+              border: '3.5px solid',
               borderImageSlice: 1,
-              borderImageSource: 'linear-gradient(45deg, #4CAF50, #81C784, #4CAF50, #81C784)',
-              animation: 'animatedgradient 3s ease alternate infinite',
-              '@keyframes animatedgradient': {
+              borderImageSource: 'linear-gradient(45deg, rgba(255,255,255,0.2), rgba(255,255,255,0.9), rgba(255,255,255,0.2))',
+              animation: 'flashingGlow 2s ease infinite',
+              '@keyframes flashingGlow': {
                 '0%': {
-                  borderImageSource: 'linear-gradient(45deg, #4CAF50, #81C784, #4CAF50, #81C784)',
+                  borderImageSource: 'linear-gradient(45deg, rgba(255,255,255,0.2), rgba(255,255,255,0.2), rgba(255,255,255,0.2))',
+                },
+                '25%': {
+                  borderImageSource: 'linear-gradient(45deg, rgba(255,255,255,0.2), rgba(255,255,255,0.9), rgba(255,255,255,0.2))',
                 },
                 '50%': {
-                  borderImageSource: 'linear-gradient(45deg, #81C784, #4CAF50, #81C784, #4CAF50)',
+                  borderImageSource: 'linear-gradient(45deg, rgba(255,255,255,0.9), rgba(255,255,255,0.2), rgba(255,255,255,0.2))',
+                },
+                '75%': {
+                  borderImageSource: 'linear-gradient(45deg, rgba(255,255,255,0.2), rgba(255,255,255,0.2), rgba(255,255,255,0.9))',
                 },
                 '100%': {
-                  borderImageSource: 'linear-gradient(45deg, #4CAF50, #81C784, #4CAF50, #81C784)',
+                  borderImageSource: 'linear-gradient(45deg, rgba(255,255,255,0.2), rgba(255,255,255,0.2), rgba(255,255,255,0.2))',
                 }
               }
             }}
