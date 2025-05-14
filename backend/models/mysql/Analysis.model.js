@@ -69,8 +69,21 @@ const Analysis = sequelize.define('Analysis', {
   tableName: 'analyses'
 });
 
-// Definiowanie relacji
-Analysis.belongsTo(User, { foreignKey: 'userId', as: 'user' });
-User.hasMany(Analysis, { foreignKey: 'userId', as: 'analyses' });
+// Relacje
+User.hasMany(Analysis, { 
+  foreignKey: 'userId', 
+  as: 'analyses',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+  hooks: true
+});
+
+Analysis.belongsTo(User, { 
+  foreignKey: 'userId', 
+  as: 'user',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+  hooks: true
+});
 
 module.exports = Analysis;

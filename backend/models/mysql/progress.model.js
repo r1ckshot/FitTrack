@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../../config/mysql.config');
+const User = require('./user.model');
 
 const Progress = sequelize.define('Progress', {
   userId: {
@@ -45,6 +46,22 @@ const Progress = sequelize.define('Progress', {
       record.updatedAt = new Date();
     }
   }
+});
+
+// Relacje
+User.hasMany(Progress, { 
+  foreignKey: 'userId', 
+  as: 'progressRecords',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+  hooks: true
+});
+
+Progress.belongsTo(User, { 
+  foreignKey: 'userId', 
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+  hooks: true
 });
 
 module.exports = Progress;
