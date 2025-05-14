@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../../config/mysql.config');
+const User = require('./user.model'); 
 
 // Model TrainingPlan
 const TrainingPlan = sequelize.define('TrainingPlan', {
@@ -127,6 +128,21 @@ const TrainingExercise = sequelize.define('TrainingExercise', {
 });
 
 // Relacje
+User.hasMany(TrainingPlan, { 
+  foreignKey: 'userId', 
+  as: 'trainingPlans',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+  hooks: true
+});
+
+TrainingPlan.belongsTo(User, { 
+  foreignKey: 'userId', 
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+  hooks: true
+});
+
 TrainingPlan.hasMany(TrainingDay, { foreignKey: 'planId', onDelete: 'CASCADE' });
 TrainingDay.belongsTo(TrainingPlan, { foreignKey: 'planId' });
 

@@ -1,6 +1,7 @@
 // MySQL Model
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../../config/mysql.config');
+const User = require('./user.model');
 
 // Model DietPlan
 const DietPlan = sequelize.define('DietPlan', {
@@ -111,15 +112,32 @@ const Meal = sequelize.define('Meal', {
   },
   recipeUrl: {
     type: DataTypes.STRING,
-    allowNull: true, // Nowe pole na URL przepisu
+    allowNull: true,
   },
   order: {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
+},{
+  tableName: 'DietMeals',
 });
 
 // Relacje
+User.hasMany(DietPlan, { 
+  foreignKey: 'userId', 
+  as: 'dietPlans',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+  hooks: true  
+});
+
+DietPlan.belongsTo(User, { 
+  foreignKey: 'userId', 
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+  hooks: true
+});
+
 DietPlan.hasMany(DietDay, { foreignKey: 'planId', onDelete: 'CASCADE' });
 DietDay.belongsTo(DietPlan, { foreignKey: 'planId' });
 
