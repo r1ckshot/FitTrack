@@ -2,19 +2,19 @@
 
 FitTrack to kompleksowa aplikacja do zarządzania treningami, dietą oraz śledzenia postępów. Umożliwia tworzenie planów treningowych i dietetycznych, monitorowanie postępów oraz przeprowadzanie zaawansowanych analiz korelacji między wskaźnikami zdrowotnymi a wskaźnikami społeczno-ekonomicznymi.
 
-## Spis treści
+## Spis treści 📋
 
-- [Funkcjonalności](#funkcjonalności)
-- [Wymagania systemowe](#wymagania-systemowe)
-- [Uruchamianie aplikacji](#uruchamianie-aplikacji)
-  - [Używanie Dockera](#używanie-dockera)
-  - [Uruchamianie bez Dockera](#uruchamianie-bez-dockera)
-- [Konfiguracja baz danych](#konfiguracja-baz-danych)
-- [Klucze API](#klucze-api)
-- [Uwagi dotyczące MySQL](#uwagi-dotyczące-mysql)
-- [Zrzuty ekranu](#zrzuty-ekranu)
+- [Funkcjonalności 🌟](#funkcjonalności-)
+- [Wymagania systemowe 🖥️](#wymagania-systemowe-)
+- [Konfiguracja baz danych 🗄️](#konfiguracja-baz-danych-)
+- [Uruchamianie aplikacji 🚀](#uruchamianie-aplikacji-)
+  - [Używanie Dockera 🐳](#używanie-dockera-)
+  - [Uruchamianie bez Dockera ⚙️](#uruchamianie-bez-dockera-)
+- [Klucze API 🔑](#klucze-api-)
+- [Uwagi dotyczące MySQL 📝](#uwagi-dotyczące-mysql-)
+- [Zrzuty ekranu 📷](#zrzuty-ekranu-)
 
-## Funkcjonalności
+## Funkcjonalności 🌟
 
 ### 1. Plany Treningowe 💪
 - Tworzenie spersonalizowanych planów treningowych
@@ -49,7 +49,7 @@ FitTrack to kompleksowa aplikacja do zarządzania treningami, dietą oraz śledz
 - Importowanie i eksportowanie planów treningowych i dietetycznych
 - Importowanie i eksportowanie przeprowadzonych analiz
 
-## Wymagania systemowe
+## Wymagania systemowe 🖥️
 
 ### Do uruchomienia z Dockerem:
 - Docker Engine 20.10+ i Docker Compose 2.0+
@@ -61,100 +61,11 @@ FitTrack to kompleksowa aplikacja do zarządzania treningami, dietą oraz śledz
 - MongoDB 4.4+ lub MySQL 8.0+ (lub obie)
 - npm 8.x+
 
-## Uruchamianie aplikacji
-
-### Używanie Dockera
-
-Projekt jest w pełni zdockeryzowany, co pozwala na łatwe uruchomienie wszystkich komponentów. Docker automatycznie zainstaluje wszystkie zależności z plików package.json, więc nie musisz instalować ich lokalnie:
-
-1. Uruchomienie całej aplikacji:
-```bash
-docker-compose up -d
-```
-
-2. Zatrzymanie całej aplikacji:
-```bash
-docker-compose down
-```
-
-3. Zarządzanie poszczególnymi usługami:
-```bash
-# Zatrzymanie tylko frontendu
-docker-compose stop frontend
-
-# Restart tylko backendu
-docker-compose restart backend
-
-# Sprawdzenie logów backendu
-docker-compose logs -f backend
-```
-
-4. Przebudowanie kontenerów (w przypadku zmian w konfiguracji):
-```bash
-docker-compose build
-```
-
-#### Konfiguracja Docker dla pojedynczej bazy danych
-
-Domyślnie docker-compose.yml uruchamia zarówno MongoDB jak i MySQL. Aby uruchomić aplikację tylko z jedną bazą danych:
-
-**Tylko MongoDB:**
-```bash
-docker-compose up -d mongodb backend frontend
-```
-
-**Tylko MySQL:**
-```bash
-docker-compose up -d mysql backend frontend
-```
-
-Pamiętaj, aby dostosować zmienną `DATABASE_TYPE` w pliku `backend/.env` odpowiednio do wybranej bazy danych.
-
-### Uruchamianie bez Dockera
-
-#### Backend:
-1. Przejdź do katalogu backend:
-```bash
-cd backend
-```
-
-2. Zainstaluj zależności:
-```bash
-npm install
-```
-
-3. Upewnij się, że masz uruchomioną bazę danych (MongoDB i/lub MySQL)
-
-4. Skonfiguruj plik `.env` (przykład w repozytorium)
-
-5. Uruchom serwer:
-```bash
-npm start
-```
-
-#### Frontend:
-1. Przejdź do katalogu frontend:
-```bash
-cd frontend
-```
-
-2. Zainstaluj zależności:
-```bash
-npm install
-```
-
-3. Skonfiguruj plik `.env` (przykład w repozytorium)
-
-4. Uruchom aplikację:
-```bash
-npm start
-```
-
-Aplikacja będzie dostępna pod adresem `http://localhost:3000`, a API pod adresem `http://localhost:8080`.
-
-## Konfiguracja baz danych
+## Konfiguracja baz danych 🗄️
 
 FitTrack oferuje elastyczną konfigurację baz danych, umożliwiając korzystanie z MongoDB, MySQL lub obu równocześnie.
+
+### Wybór bazy danych
 
 Konfiguracja odbywa się poprzez zmienną `DATABASE_TYPE` w pliku `backend/.env`:
 
@@ -162,6 +73,8 @@ Konfiguracja odbywa się poprzez zmienną `DATABASE_TYPE` w pliku `backend/.env`
 # Możliwe wartości: mongo, mysql, both
 DATABASE_TYPE=both
 ```
+
+Ta zmienna określa, która baza danych będzie używana przez aplikację, niezależnie od tego, czy aplikacja jest uruchamiana z Dockerem czy bez.
 
 ### MongoDB
 - Domyślny port: 27017
@@ -174,36 +87,141 @@ DATABASE_TYPE=both
 - Użytkownik: fituser
 - Hasło: fitpassword
 
-## Klucze API
+## Uruchamianie aplikacji 🚀
+
+### Używanie Dockera 🐳
+
+Projekt jest w pełni zdockeryzowany, co pozwala na łatwe uruchomienie wszystkich komponentów z wybraną bazą danych.
+
+#### Budowanie i uruchamianie aplikacji
+
+1. **Najpierw należy ustawić odpowiednią wartość w pliku `backend/.env`**:
+   ```
+   DATABASE_TYPE=both  # lub mysql lub mongo
+   ```
+
+2. **Następnie można użyć profilów Docker Compose do budowania i uruchamiania wybranych usług**:
+
+**Budowanie i uruchamianie tylko z MongoDB:**
+```bash
+docker-compose --profile mongo build
+docker-compose --profile mongo up -d
+```
+
+**Budowanie i uruchamianie tylko z MySQL:**
+```bash
+docker-compose --profile mysql build
+docker-compose --profile mysql up -d
+```
+
+**Budowanie i uruchamianie z obiema bazami danych:**
+```bash
+docker-compose --profile all build
+docker-compose --profile all up -d
+```
+
+Możliwe jest też użycie domyślnego profilu, który uruchomi wszystkie usługi:
+```bash
+docker-compose build
+docker-compose up -d
+```
+
+#### Zarządzanie kontenerami
+
+```bash
+# Zatrzymanie wszystkich kontenerów
+docker-compose down
+
+# Sprawdzenie statusu kontenerów
+docker-compose ps
+
+# Sprawdzenie logów backendu
+docker-compose logs -f backend
+```
+
+### Uruchamianie bez Dockera ⚙️
+
+#### Backend:
+1. Należy przejść do katalogu backend:
+```bash
+cd backend
+```
+
+2. Zainstalować zależności:
+```bash
+npm install
+```
+
+3. Upewnić się, że uruchomiona jest odpowiednia baza danych (MongoDB i/lub MySQL) zgodnie z wartością `DATABASE_TYPE` w pliku `backend/.env`
+   ```
+   DATABASE_TYPE=both  # lub mysql lub mongo
+   ```
+
+4. Uruchomić serwer:
+```bash
+npm start
+```
+
+#### Frontend:
+1. Należy przejść do katalogu frontend:
+```bash
+cd frontend
+```
+
+2. Zainstalować zależności:
+```bash
+npm install
+```
+
+3. Uruchomić aplikację:
+```bash
+npm start
+```
+
+Aplikacja będzie dostępna pod adresem `http://localhost:3000`, a API pod adresem `http://localhost:8080`.
+
+## Klucze API 🔑
 
 Aby w pełni korzystać z funkcjonalności aplikacji, konieczne jest uzyskanie kluczy API dla zewnętrznych usług:
 
 ### ExerciseDB API (dla planów treningowych)
-1. Zarejestruj się na [RapidAPI](https://rapidapi.com/)
-2. Uzyskaj klucz API dla [ExerciseDB](https://rapidapi.com/justin-WFnsXH_t6/api/exercisedb)
-3. Dodaj klucz do pliku `frontend/.env`:
+1. Należy zarejestrować się na [RapidAPI](https://rapidapi.com/)
+2. Uzyskać klucz API dla [ExerciseDB](https://rapidapi.com/justin-WFnsXH_t6/api/exercisedb)
+3. Dodać klucz do pliku `frontend/.env`:
 ```
 REACT_APP_EXERCISEDB_API_KEY=your_api_key
 REACT_APP_EXERCISEDB_HOST=exercisedb.p.rapidapi.com
 ```
 
 ### Spoonacular API (dla planów dietetycznych)
-1. Zarejestruj się na [RapidAPI](https://rapidapi.com/)
-2. Uzyskaj klucz API dla [Spoonacular](https://rapidapi.com/spoonacular/api/recipe-food-nutrition)
-3. Dodaj klucz do pliku `frontend/.env`:
+1. Należy zarejestrować się na [RapidAPI](https://rapidapi.com/)
+2. Uzyskać klucz API dla [Spoonacular](https://rapidapi.com/spoonacular/api/recipe-food-nutrition)
+3. Dodać klucz do pliku `frontend/.env`:
 ```
 REACT_APP_SPOONACULAR_API_KEY=your_api_key
 REACT_APP_SPOONACULAR_HOST=spoonacular-recipe-food-nutrition-v1.p.rapidapi.com
 ```
 
-## Uwagi dotyczące MySQL
+## Uwagi dotyczące MySQL 📝
 
 Projekt wykorzystuje MySQL 8.0 z domyślną metodą uwierzytelniania `caching_sha2_password`. W większości przypadków, przy korzystaniu z aktualnych narzędzi, połączenie powinno działać bez dodatkowej konfiguracji.
 
 ### Potencjalne problemy z połączeniem
 
-Jeśli używasz starszej wersji klienta MySQL (np. starsza wersja MySQL Workbench) i napotkasz problemy z połączeniem do bazy danych, może być konieczna zmiana metody uwierzytelniania:
+Jeśli używana jest starsza wersja klienta MySQL (np. starsza wersja MySQL Workbench) i pojawią się problemy z połączeniem do bazy danych, może być konieczna zmiana metody uwierzytelniania:
 
-## Zrzuty ekranu
+```sql
+# Połączenie z kontenerem MySQL
+docker exec -it fittrack-mysql-1 mysql -u root -p
+# (Należy wpisać hasło: password)
+
+# Zmiana metody uwierzytelniania dla użytkownika fituser
+ALTER USER 'fituser'@'%' IDENTIFIED WITH mysql_native_password BY 'fitpassword';
+
+# Wyjście z konsoli MySQL
+EXIT;
+```
+
+## Zrzuty ekranu 📷
 
 *Tutaj będą dostępne zrzuty ekranu aplikacji*
