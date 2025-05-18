@@ -10,6 +10,9 @@ services:
     environment:
       - MONGO_INITDB_DATABASE=fittrack
       - CHOKIDAR_USEPOLLING=true
+    profiles:
+      - mongo
+      - all
 
   mysql:
     image: mysql:8.0
@@ -22,17 +25,20 @@ services:
       - MYSQL_DATABASE=fittrack
       - MYSQL_USER=fituser
       - MYSQL_PASSWORD=fitpassword
+    profiles:
+      - mysql
+      - all
 
   backend:
     build: ./backend
     ports:
       - "8080:8080"
-    depends_on:
-      - mongodb
-      - mysql  
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/fittrack
-      - MYSQL_URI=mysql://fituser:fitpassword@mysql:3306/fittrack
+      - MYSQL_HOST=mysql
+      - MYSQL_DATABASE=fittrack
+      - MYSQL_USER=fituser
+      - MYSQL_PASSWORD=fitpassword
       - JWT_SECRET=your_jwt_secret
       - NODE_ENV=development
       - CHOKIDAR_USEPOLLING=true
@@ -40,6 +46,10 @@ services:
     volumes:
       - ./backend:/app
       - /app/node_modules
+    profiles:
+      - mongo
+      - mysql
+      - all
 
   frontend:
     build: ./frontend
@@ -54,6 +64,10 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
+    profiles:
+      - mongo
+      - mysql
+      - all
 
 volumes:
   mongodb_data:
