@@ -12,6 +12,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "axios": "^1.9.0",
     "bcryptjs": "^3.0.2",
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
@@ -27,7 +28,6 @@
     "node-cache": "^5.1.2",
     "nodemon": "^3.1.9",
     "sequelize": "^6.37.7",
-    "soap": "^1.1.10",
     "xml-js": "^1.6.11",
     "xml2js": "^0.6.2"
   },
