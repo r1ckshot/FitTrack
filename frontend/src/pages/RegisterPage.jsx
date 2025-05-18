@@ -13,9 +13,24 @@ import BackgroundIcons from '../components/common/BackgroundIcons';
 import { useSnackbar } from '../contexts/SnackbarContext';
 
 const validationSchema = yup.object({
-  username: yup.string().required('Nazwa użytkownika jest wymagana'),
-  email: yup.string().email('Nieprawidłowy email').required('Email jest wymagany'),
-  password: yup.string().min(6, 'Hasło musi mieć co najmniej 6 znaków').required('Hasło jest wymagane'),
+  username: yup.string()
+    .min(3, 'Nazwa użytkownika musi mieć co najmniej 3 znaki')
+    .max(30, 'Nazwa użytkownika nie może przekraczać 30 znaków')
+    .matches(/^[a-zA-Z0-9_-]+$/, 'Nazwa użytkownika może zawierać tylko litery, cyfry, podkreślenia i myślniki')
+    .required('Nazwa użytkownika jest wymagana'),
+  
+  email: yup.string()
+    .email('Nieprawidłowy format adresu email')
+    .matches(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, 'Nieprawidłowy format adresu email')
+    .required('Adres email jest wymagany'),
+  
+  password: yup.string()
+    .min(8, 'Hasło musi mieć co najmniej 8 znaków')
+    .matches(/[a-z]/, 'Hasło musi zawierać co najmniej jedną małą literę')
+    .matches(/[A-Z]/, 'Hasło musi zawierać co najmniej jedną wielką literę')
+    .matches(/[0-9]/, 'Hasło musi zawierać co najmniej jedną cyfrę')
+    .matches(/[^a-zA-Z0-9]/, 'Hasło musi zawierać co najmniej jeden znak specjalny')
+    .required('Hasło jest wymagane')
 });
 
 const RegisterPage = () => {

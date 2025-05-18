@@ -76,7 +76,17 @@ const AnalysisForm = ({
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.name.trim()) newErrors.name = 'Nazwa analizy jest wymagana';
+    // Walidacja nazwy analizy
+    if (!formData.name) {
+      newErrors.name = 'Nazwa analizy jest wymagana';
+    } else if (formData.name.trim() === '') {
+      newErrors.name = 'Nazwa analizy nie może składać się tylko z białych znaków';
+    } else if (formData.name.length < 3) {
+      newErrors.name = 'Nazwa analizy musi zawierać co najmniej 3 znaki';
+    } else if (formData.name.length > 100) {
+      newErrors.name = 'Nazwa analizy nie może przekraczać 100 znaków';
+    }
+    
     if (!formData.analysisType) newErrors.analysisType = 'Typ analizy jest wymagany';
     if (!formData.countryCode) newErrors.countryCode = 'Kraj jest wymagany';
     if (!formData.yearStart) newErrors.yearStart = 'Rok początkowy jest wymagany';

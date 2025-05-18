@@ -43,8 +43,14 @@ const TrainingPlanForm = ({ plan, onClose }) => {
   // Validate form data
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.name.trim()) {
+    if (!formData.name) {
       newErrors.name = 'Nazwa planu jest wymagana';
+    } else if (formData.name.trim() === '') {
+      newErrors.name = 'Nazwa planu nie może składać się tylko z białych znaków';
+    } else if (formData.name.length < 3) {
+      newErrors.name = 'Nazwa planu musi zawierać co najmniej 3 znaki';
+    } else if (formData.name.length > 100) {
+      newErrors.name = 'Nazwa planu nie może przekraczać 100 znaków';
     }
 
     setErrors(newErrors);

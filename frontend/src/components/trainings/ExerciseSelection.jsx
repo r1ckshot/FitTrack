@@ -246,7 +246,18 @@ const ExerciseSelection = ({ onExerciseSelect, onCancel, currentExercise }) => {
   const handleSaveCustomExercise = () => {
     // Validate required fields
     const errors = {};
-    if (!customExercise.name.trim()) errors.name = 'Nazwa jest wymagana';
+
+    // Walidacja nazwy ćwiczenia
+    if (!customExercise.name) {
+      errors.name = 'Nazwa jest wymagana';
+    } else if (customExercise.name.trim() === '') {
+      errors.name = 'Nazwa nie może składać się tylko z białych znaków';
+    } else if (customExercise.name.length < 3) {
+      errors.name = 'Nazwa musi zawierać co najmniej 3 znaki';
+    } else if (customExercise.name.length > 100) {
+      errors.name = 'Nazwa nie może przekraczać 100 znaków';
+    }
+    
     if (!customExercise.bodyPart) errors.bodyPart = 'Partia ciała jest wymagana';
     if (!customExercise.target) errors.target = 'Cel treningowy jest wymagany';
 

@@ -195,27 +195,45 @@ const MealSelection = ({ onMealSelect, onCancel, currentMeal }) => {
   const handleSaveCustomMeal = () => {
     // Walidacja wymaganych pól
     const errors = {};
-    if (!customMeal.title.trim()) errors.title = 'Nazwa jest wymagana';
+
+    // Walidacja tytułu
+    if (!customMeal.title) {
+      errors.title = 'Nazwa jest wymagana';
+    } else if (customMeal.title.trim() === '') {
+      errors.title = 'Nazwa nie może składać się tylko z białych znaków';
+    } else if (customMeal.title.length < 3) {
+      errors.title = 'Nazwa musi zawierać co najmniej 3 znaki';
+    } else if (customMeal.title.length > 100) {
+      errors.title = 'Nazwa nie może przekraczać 100 znaków';
+    }
 
     // Walidacja wartości liczbowych
     const caloriesValue = parseFloat(customMeal.calories);
     if (isNaN(caloriesValue) || caloriesValue < 1) {
       errors.calories = 'Kalorie muszą być liczbą większą lub równą 1';
+    } else if (caloriesValue > 3000) {
+      errors.calories = 'Kalorie nie mogą przekraczać 3000';
     }
 
     const proteinValue = parseFloat(customMeal.protein);
     if (isNaN(proteinValue) || proteinValue < 0) {
       errors.protein = 'Białko musi być liczbą większą lub równą 0';
+    } else if (proteinValue > 200) {
+      errors.protein = 'Białko nie może przekraczać 200 g';
     }
 
     const carbsValue = parseFloat(customMeal.carbs);
     if (isNaN(carbsValue) || carbsValue < 0) {
       errors.carbs = 'Węglowodany muszą być liczbą większą lub równą 0';
+    } else if (carbsValue > 300) {
+      errors.carbs = 'Węglowodany nie mogą przekraczać 300 g';
     }
 
     const fatValue = parseFloat(customMeal.fat);
     if (isNaN(fatValue) || fatValue < 0) {
       errors.fat = 'Tłuszcze muszą być liczbą większą lub równą 0';
+    } else if (fatValue > 100) {
+      errors.fat = 'Tłuszcze nie mogą przekraczać 100 g';
     }
 
     if (Object.keys(errors).length > 0) {
@@ -588,7 +606,7 @@ const MealSelection = ({ onMealSelect, onCancel, currentMeal }) => {
               onChange={handleCustomMealChange}
               placeholder="np. https://link-do-zdjecia.jpg"
             />
-            
+
             <TextField
               fullWidth
               label="Link do przepisu (opcjonalnie)"

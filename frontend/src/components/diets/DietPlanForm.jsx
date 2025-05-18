@@ -39,9 +39,17 @@ const DietPlanForm = ({ plan, onClose }) => {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.name.trim()) {
+
+    if (!formData.name) {
       newErrors.name = 'Nazwa planu jest wymagana';
+    } else if (formData.name.trim() === '') {
+      newErrors.name = 'Nazwa planu nie może składać się tylko z białych znaków';
+    } else if (formData.name.length < 3) {
+      newErrors.name = 'Nazwa planu musi zawierać co najmniej 3 znaki';
+    } else if (formData.name.length > 100) {
+      newErrors.name = 'Nazwa planu nie może przekraczać 100 znaków';
     }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -52,31 +60,31 @@ const DietPlanForm = ({ plan, onClose }) => {
       // Pobierz wszystkie plany treningowe
       const response = await api.get('/diet-plans');
       const existingPlans = response.data;
-      
+
       // Przygotuj znormalizowaną nazwę nowego planu (usuń zbędne spacje, przytnij)
       const normalizedNewName = formData.name.toLowerCase().trim().replace(/\s+/g, ' ');
-      
+
       // Jeśli edytujemy istniejący plan, ignorujemy jego nazwę przy sprawdzaniu
       const planWithSameName = existingPlans.find(existingPlan => {
         // Znormalizuj również nazwę istniejącego planu
         const normalizedExistingName = existingPlan.name.toLowerCase().trim().replace(/\s+/g, ' ');
-        
+
         // Sprawdź czy znormalizowane nazwy są takie same
         const sameNameCheck = normalizedExistingName === normalizedNewName;
-        
+
         // Jeśli nie edytujemy planu, każda taka sama nazwa jest duplikatem
         if (!plan) {
           return sameNameCheck;
         }
-        
+
         // Jeśli edytujemy plan, porównujemy ID z uwzględnieniem obu typów ID (_id dla MongoDB i id dla MySQL)
         const currentPlanId = plan._id || plan.id;
         const existingPlanId = existingPlan._id || existingPlan.id;
-        
+
         // To jest duplikat tylko jeśli nazwa jest taka sama, ale ID jest inne
         return sameNameCheck && currentPlanId !== existingPlanId;
       });
-      
+
       return !!planWithSameName; // Zwraca true jeśli znaleziono duplikat
     } catch (error) {
       showSnackbar('Błąd podczas sprawdzania nazwy planu', 'error');
@@ -92,8 +100,8 @@ const DietPlanForm = ({ plan, onClose }) => {
       }
       if (day.meals?.length > 0) {
         for (const meal of day.meals) {
-          if (!meal.recipeId || !meal.title || 
-              (typeof meal.calories !== 'number' && isNaN(parseFloat(meal.calories)))) {
+          if (!meal.recipeId || !meal.title ||
+            (typeof meal.calories !== 'number' && isNaN(parseFloat(meal.calories)))) {
             console.log('Nieprawidłowe dane posiłku:', meal);
             return false;
           }
