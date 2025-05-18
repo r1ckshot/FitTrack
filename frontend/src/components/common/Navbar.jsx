@@ -1,11 +1,16 @@
-import React from 'react';
 import { AppBar, Toolbar, Typography, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { clearRecipesCache } from '../../services/dietService';
+import { clearExercisesCache } from '../../services/exerciseService';
 
 const Navbar = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
+
+    // Czyszczenie cache przed wylogowaniem
+    clearRecipesCache();
+    clearExercisesCache();
     localStorage.removeItem('token'); // Usuwamy token z localStorage
     navigate('/'); // Przekierowanie na HomePage
   };

@@ -5,11 +5,11 @@ import * as yup from 'yup';
 import api from '../services/api';
 import { motion } from 'framer-motion';
 import BackgroundIcons from '../components/common/BackgroundIcons';
-import { useSnackbar } from '../contexts/SnackbarContext'; 
+import { useSnackbar } from '../contexts/SnackbarContext';
 
 const validationSchema = yup.object({
   email: yup.string().email('Nieprawidłowy email').required('Email jest wymagany'),
-  password: yup.string().min(6, 'Hasło musi mieć co najmniej 6 znaków').required('Hasło jest wymagane'),
+  password: yup.string().min(8, 'Hasło musi mieć co najmniej 8 znaków').required('Hasło jest wymagane'),
 });
 
 const LoginPage = ({ updateAuthStatus }) => {
@@ -23,7 +23,7 @@ const LoginPage = ({ updateAuthStatus }) => {
       try {
         const response = await api.post('/auth/login', values);
         localStorage.setItem('token', response.data.token); // Zapis tokena do LocalStorage
-        
+
         updateAuthStatus(); // Aktualizujemy status logowania
         navigate('/dashboard'); // Przekierowanie do dashboardu
         showSnackbar('Zalogowano pomyślnie!', 'success');

@@ -1,7 +1,12 @@
 import axios from 'axios';
 
-// Cache dla przechowywania danych, aby uniknąć wielokrotnego pobierania
+// Cache dla przechowywania danych w pamięci
 let recipesCache = null;
+
+// Nazwa klucza dla localStorage
+const RECIPES_CACHE_KEY = 'spoonacular_recipes_cache';
+// Czas życia cache w milisekundach (1 godzina)
+const CACHE_TTL = 60 * 60 * 1000;
 
 const apiClient = axios.create({
   baseURL: 'https://spoonacular-recipe-food-nutrition-v1.p.rapidapi.com',
@@ -22,9 +27,10 @@ const parseNutrientValue = (value) => {
 
 // Funkcja normalizująca dane przepisu
 const normalizeRecipe = (recipe) => {
-  // W complexSearch informacje o wartościach odżywczych są w nutrition.nutrients
+  // W searchComplex informacje o wartościach odżywczych mogą być strukturyzowane inaczej
   let calories = 0, protein = 0, carbs = 0, fat = 0;
   
+  // Sprawdzamy różne możliwe ścieżki do wartości odżywczych
   if (recipe.nutrition && recipe.nutrition.nutrients) {
     recipe.nutrition.nutrients.forEach(nutrient => {
       if (nutrient.name === 'Calories') calories = nutrient.amount;
@@ -32,13 +38,19 @@ const normalizeRecipe = (recipe) => {
       if (nutrient.name === 'Carbohydrates') carbs = nutrient.amount;
       if (nutrient.name === 'Fat') fat = nutrient.amount;
     });
+  } else if (recipe.calories) {
+    // Alternatywne ścieżki dla różnych formatów API
+    calories = recipe.calories;
+    protein = recipe.protein || 0;
+    carbs = recipe.carbs || 0;
+    fat = recipe.fat || 0;
   }
 
   return {
     id: recipe.id,
     title: recipe.title,
     image: recipe.image,
-    imageType: recipe.imageType,
+    imageType: recipe.imageType || '',
     calories: parseFloat(calories || 0),
     protein: parseFloat(protein || 0),
     carbs: parseFloat(carbs || 0),
@@ -48,17 +60,56 @@ const normalizeRecipe = (recipe) => {
   };
 };
 
+// Funkcja pobierająca dane z localStorage
+const getFromLocalStorage = () => {
+  try {
+    const cachedData = localStorage.getItem(RECIPES_CACHE_KEY);
+    if (cachedData) {
+      const { data, timestamp } = JSON.parse(cachedData);
+      // Sprawdzenie czy cache nie wygasł
+      if (Date.now() - timestamp < CACHE_TTL) {
+        return data;
+      }
+    }
+  } catch (error) {
+    console.error('Błąd podczas odczytu z localStorage:', error);
+  }
+  return null;
+};
+
+// Funkcja zapisująca dane do localStorage
+const saveToLocalStorage = (data) => {
+  try {
+    const cacheObject = {
+      data,
+      timestamp: Date.now()
+    };
+    localStorage.setItem(RECIPES_CACHE_KEY, JSON.stringify(cacheObject));
+  } catch (error) {
+    console.error('Błąd podczas zapisu do localStorage:', error);
+  }
+};
+
 // Główna funkcja pobierająca przepisy z nowego endpointu
 export const getRecipesByNutrients = async (params = {}) => {
   try {
+    // Sprawdzamy czy mamy podstawowe dane w pamięci
+    if (!recipesCache) {
+      // Próbujemy załadować z localStorage
+      recipesCache = getFromLocalStorage();
+    }
+    
     // Jeśli cache istnieje i nie ma specyficznych parametrów, używamy cache
     if (recipesCache && Object.keys(params).length === 0) {
       return recipesCache;
     }
 
-    const response = await apiClient.get('/recipes/complexSearch', {
+    const response = await apiClient.get('/recipes/searchComplex', {
       params: {
-        addRecipeNutrition: true, // Ważne: pobieramy informacje o wartościach odżywczych
+        limitLicense: 'false',
+        offset: '0',
+        ranking: '2',
+        addRecipeNutrition: true,
         minProtein: params.minProtein || 0,
         maxProtein: params.maxProtein || 100,
         minCarbs: params.minCarbs || 0,
@@ -73,16 +124,24 @@ export const getRecipesByNutrients = async (params = {}) => {
     });
 
     // Normalizacja danych - wyniki są w response.data.results
-    const normalizedData = response.data.results.map(normalizeRecipe);
+    const normalizedData = (response.data.results || []).map(normalizeRecipe);
     
     // Aktualizacja cache tylko dla podstawowego zapytania
     if (Object.keys(params).length === 0) {
       recipesCache = normalizedData;
+      // Zapisz do localStorage dla przyszłych odświeżeń strony
+      saveToLocalStorage(normalizedData);
     }
     
     return normalizedData;
   } catch (error) {
     console.error('Błąd podczas pobierania przepisów:', error);
+    
+    // Dodajemy więcej szczegółów do logów dla łatwiejszego debugowania
+    if (error.response) {
+      console.error('Odpowiedź serwera:', error.response.status, error.response.data);
+    }
+    
     // Zwróć cache jeśli istnieje lub pustą tablicę
     return recipesCache || [];
   }
@@ -118,7 +177,12 @@ export const getRecipeById = async (id) => {
   return recipes.find(recipe => recipe.id === parseInt(id, 10));
 };
 
-// Funkcja czyszcząca cache - bez zmian
+// Funkcja czyszcząca cache - rozszerzona o czyszczenie localStorage
 export const clearRecipesCache = () => {
   recipesCache = null;
+  try {
+    localStorage.removeItem(RECIPES_CACHE_KEY);
+  } catch (error) {
+    console.error('Błąd podczas czyszczenia localStorage:', error);
+  }
 };
