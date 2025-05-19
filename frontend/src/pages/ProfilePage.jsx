@@ -720,7 +720,7 @@ const ProfilePage = () => {
           <DeleteIcon sx={{ mr: 1, color: '#d32f2f' }} />
           Czy na pewno chcesz usunąć konto?
         </DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
+        <DialogContent sx={{ mt: 2, pt: 3 }}>
           <DialogContentText>
             Ta operacja jest nieodwracalna. Wszystkie Twoje dane zostaną usunięte z systemu. Czy jesteś pewien, że chcesz kontynuować?
           </DialogContentText>
