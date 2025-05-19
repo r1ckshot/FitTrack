@@ -6,14 +6,26 @@ const databaseType = process.env.DATABASE_TYPE || 'both';
 
 // Funkcja pomocnicza do poprawnego mapowania ID użytkownika
 function getMySQLUserId(user) {
-  console.log('DEBUG - req.user w getMySQLUserId:', JSON.stringify(user, null, 2));
-  
-  if (user.mysqlId) return user.mysqlId;
-  if (user.currentUser && user.currentUser.id) return user.currentUser.id;
-  if (user.sqlId) return user.sqlId;
-  if (user.numericId) return user.numericId;
-  
-  throw new Error('Nie można ustalić ID użytkownika MySQL');
+  ///console.log('DEBUG - req.user w getMySQLUserId:', JSON.stringify(user, null, 2));
+
+  const databaseType = process.env.DATABASE_TYPE || 'both';
+  if (databaseType === 'mongo') {
+    return 1; // Domyślne ID dla operacji MySQL gdy używamy tylko MongoDB
+  }
+
+  // Najpierw bezpośrednio pole mysqlId, które powinno zawierać liczbowy ID z MySQL
+  if (user.mysqlId && typeof user.mysqlId === 'number') return user.mysqlId;
+
+  // Inne możliwe lokalizacje ID MySQL
+  if (user.sqlId && typeof user.sqlId === 'number') return user.sqlId;
+  if (user.numericId && typeof user.numericId === 'number') return user.numericId;
+
+  // Jeśli wszystkie powyższe zawiodły, sprawdzenie czy mamy dostęp do obiektu użytkownika MySQL
+  if (user.currentUser && user.currentUser.id && typeof user.currentUser.id === 'number') {
+    return user.currentUser.id;
+  }
+
+  throw new Error('Nie można ustalić ID użytkownika MySQL - brak numerycznego identyfikatora');
 }
 
 // Bezpieczna operacja MongoDB - ignoruje błędy połączenia gdy baza jest niedostępna

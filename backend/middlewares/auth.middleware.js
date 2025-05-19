@@ -16,38 +16,39 @@ const authenticateToken = async (req, res, next) => {
     const decoded = jwt.verify(token, secret); // Weryfikacja tokena
     
     // Pobierz aktualny obiekt użytkownika z bazy danych
-    let user = null;
+    let mongoUser = null;
+    let mysqlUser = null;
     const databaseType = process.env.DATABASE_TYPE || 'both';
     
     // Sprawdź w MongoDB
     if (databaseType === 'mongo' || databaseType === 'both') {
       try {
-        user = await MongoUser.findOne({ username: decoded.username });
+        mongoUser = await MongoUser.findOne({ username: decoded.username });
       } catch (mongoError) {
         console.error('Błąd pobierania użytkownika z MongoDB:', mongoError);
       }
     }
     
-    // Jeśli nie znaleziono w MongoDB, sprawdź w MySQL
-    if (!user && (databaseType === 'mysql' || databaseType === 'both')) {
+    // Sprawdź w MySQL
+    if (databaseType === 'mysql' || databaseType === 'both') {
       try {
-        user = await MySQLUser.findOne({ where: { username: decoded.username } });
+        mysqlUser = await MySQLUser.findOne({ where: { username: decoded.username } });
       } catch (mysqlError) {
         console.error('Błąd pobierania użytkownika z MySQL:', mysqlError);
       }
     }
     
     // Jeśli użytkownik nie istnieje w żadnej bazie danych
-    if (!user) {
+    if (!mongoUser && !mysqlUser) {
       return res.status(403).json({ error: 'Nieprawidłowy token - użytkownik nie istnieje.' });
     }
     
     // Przypisanie danych użytkownika do req
     req.user = {
       ...decoded,
-      mysqlId: user.id, 
-      mongoDB: user._id ? user._id.toString() : null, // ID z MongoDB jeśli istnieje
-      currentUser: user // pełen obiekt użytkownika
+      mysqlId: mysqlUser ? mysqlUser.id : null, // Numeryczne ID z MySQL
+      mongoDB: mongoUser ? mongoUser._id.toString() : null, // ID z MongoDB
+      currentUser: mongoUser || mysqlUser // pełen obiekt użytkownika
     };
     
     next(); // Przejście do następnego middleware lub trasy
