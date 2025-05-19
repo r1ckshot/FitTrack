@@ -75,12 +75,12 @@ class AnalyticsController {
             {
                 id: 'death_probability_vs_urbanization',
                 name: 'Prawdopodobieństwo zgonu vs urbanizacja',
-                description: 'Czy w bardziej zurbanizowanych krajach częściej występują choroby serca?'
+                description: 'Czy w bardziej zurbanizowanych krajach częściej występują choroby serca i inne choroby niezakaźne?'
             },
             {
                 id: 'diabetes_vs_gini_index',
                 name: 'Cukrzyca vs nierówności dochodowe',
-                description: 'Czy większe nierówności dochodowe wiążą się z częstszym występowaniem chorób cywilizacyjnych?'
+                description: 'Czy większe nierówności dochodowe wiążą się z częstszym występowaniem cukrzycy?'
             }
         ];
 
