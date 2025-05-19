@@ -90,7 +90,8 @@ class AuthController {
       const token = jwt.sign(
         {
           id: user._id || user.id,
-          username: user.username
+          username: user.username,
+          mysqlId: user.id 
         },
         process.env.JWT_SECRET || 'supersecretkey',
         { expiresIn: '1h' } // Token ważny przez 1 godzinę

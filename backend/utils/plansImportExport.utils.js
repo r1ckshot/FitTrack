@@ -445,7 +445,7 @@ function reconstructDietPlan(importData) {
 async function deletePlan(planId, planType, userId) {
   try {
     // Konwersja ID użytkownika dla MySQL
-    const mysqlUserId = getMySQLUserId({ id: userId });
+    const mysqlUserId = userId;
 
     if (databaseType === 'mongo' || databaseType === 'both') {
       const PlanModel = planType === 'training' ? MongoTrainingPlan : MongoDietPlan;
@@ -535,7 +535,7 @@ async function checkIfPlanExists(planName, planType, userId) {
     let mysqlPlan = null;
 
     // Konwersja ID użytkownika dla MySQL
-    const mysqlUserId = getMySQLUserId({ id: userId });
+    const mysqlUserId = userId;
 
     if (databaseType === 'mongo' || databaseType === 'both') {
       const PlanModel = planType === 'training' ? MongoTrainingPlan : MongoDietPlan;

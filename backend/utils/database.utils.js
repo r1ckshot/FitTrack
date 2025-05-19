@@ -6,10 +6,14 @@ const databaseType = process.env.DATABASE_TYPE || 'both';
 
 // Funkcja pomocnicza do poprawnego mapowania ID użytkownika
 function getMySQLUserId(user) {
+  console.log('DEBUG - req.user w getMySQLUserId:', JSON.stringify(user, null, 2));
+  
   if (user.mysqlId) return user.mysqlId;
+  if (user.currentUser && user.currentUser.id) return user.currentUser.id;
   if (user.sqlId) return user.sqlId;
   if (user.numericId) return user.numericId;
-  return 1; // Domyślne ID
+  
+  throw new Error('Nie można ustalić ID użytkownika MySQL');
 }
 
 // Bezpieczna operacja MongoDB - ignoruje błędy połączenia gdy baza jest niedostępna

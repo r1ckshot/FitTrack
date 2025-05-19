@@ -277,7 +277,7 @@ function reconstructAnalysis(importData) {
 async function deleteAnalysis(analysisId, userId) {
   try {
     // Konwersja ID użytkownika dla MySQL
-    const mysqlUserId = getMySQLUserId({ id: userId });
+    const mysqlUserId = userId;
 
     if (databaseType === 'mongo' || databaseType === 'both') {
       await safeMongoOperation(async () => {
@@ -311,7 +311,7 @@ async function checkIfAnalysisExists(analysisName, userId) {
     let mysqlAnalysis = null;
 
     // Konwersja ID użytkownika dla MySQL
-    const mysqlUserId = getMySQLUserId({ id: userId });
+    const mysqlUserId = userId;
 
     if (databaseType === 'mongo' || databaseType === 'both') {
       mongoAnalysis = await safeMongoOperation(async () => {

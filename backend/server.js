@@ -7,6 +7,7 @@ require('dotenv').config();
 
 const connectMongoDB = require('./config/db.config');
 const { sequelize } = require('./config/mysql.config');
+const syncModels = require('./config/sync.models'); 
 
 const app = express();
 
@@ -26,8 +27,8 @@ if (databaseType === 'mongo' || databaseType === 'both') {
 }
 
 if (databaseType === 'mysql' || databaseType === 'both') {
-  sequelize.sync({ alter: true }) // Synchronizacja z MySQL
-    .then(() => console.log('Modele Sequelize zsynchronizowane z bazą MySQL.'))
+  syncModels()
+    .then(() => console.log('Wszystkie modele Sequelize poprawnie zsynchronizowane z bazą MySQL.'))
     .catch(error => console.error('Błąd synchronizacji MySQL:', error));
 }
 
