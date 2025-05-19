@@ -37,11 +37,11 @@ FitTrack to kompleksowa aplikacja do zarządzania treningami, dietą oraz śledz
 ### 4. Analizy Zdrowotne 🔍
 - Łączenie i porównywanie danych z WHO i World Bank
 - Analiza korelacji między wskaźnikami zdrowotnymi a społeczno-ekonomicznymi
-- Wizualizacja danych na interaktywnych wykresach
+- Wizualizacja danych na interaktywnych wykresach z możliwością wyboru kraju w określonym okresie czasu
 - Typy analiz:
   - Otyłość vs wydatki na ochronę zdrowia: Czy kraje wydające więcej na ochronę zdrowia mają niższe wskaźniki otyłości?
   - PKB per capita vs aktywność fizyczna: Czy zamożność społeczeństwa przekłada się na większą aktywność fizyczną?
-  - Prawdopodobieństwo zgonu vs urbanizacja: Czy w bardziej zurbanizowanych krajach częściej występują choroby serca?
+  - Prawdopodobieństwo zgonu vs urbanizacja: Czy w bardziej zurbanizowanych krajach częściej występują choroby serca i inne choroby niezakaźne?
   - Cukrzyca vs nierówności dochodowe: Czy większe nierówności dochodowe wiążą się z częstszym występowaniem cukrzycy?
 
 ### 5. Import i Eksport Danych 💾
@@ -54,7 +54,12 @@ FitTrack to kompleksowa aplikacja do zarządzania treningami, dietą oraz śledz
 ### Do uruchomienia z Dockerem:
 - Docker Engine 20.10+ i Docker Compose 2.0+
 - 4GB RAM (zalecane)
-- 2GB wolnego miejsca na dysku
+- Wymagania dyskowe:
+  - Aplikacja (frontend + backend): ~2.6GB
+  - MongoDB: ~1.2GB
+  - MySQL: ~1.1GB
+  - Łącznie przy użyciu obu baz danych: ~5GB
+  - Łącznie przy użyciu tylko jednej bazy: ~3.8GB (z MongoDB) lub ~3.7GB (z MySQL)
 
 ### Do uruchomienia bez Dockera:
 - Node.js 18.x+ (zalecane 22.x)
@@ -120,17 +125,13 @@ docker-compose --profile all build
 docker-compose --profile all up -d
 ```
 
-Możliwe jest też użycie domyślnego profilu, który uruchomi wszystkie usługi:
-```bash
-docker-compose build
-docker-compose up -d
-```
-
 #### Zarządzanie kontenerami
 
 ```bash
-# Zatrzymanie wszystkich kontenerów
-docker-compose down
+# Zatrzymanie wszystkich kontenerów (z odpowiednim profilem)
+docker-compose --profile mongo down
+docker-compose --profile mysql down
+docker-compose --profile all down
 
 # Sprawdzenie statusu kontenerów
 docker-compose ps
@@ -152,12 +153,33 @@ cd backend
 npm install
 ```
 
-3. Upewnić się, że uruchomiona jest odpowiednia baza danych (MongoDB i/lub MySQL) zgodnie z wartością `DATABASE_TYPE` w pliku `backend/.env`
-   ```
-   DATABASE_TYPE=both  # lub mysql lub mongo
+3. Skonfigurować plik `backend/.env` dla lokalnego uruchomienia:
+```
+# Dla MongoDB
+MONGODB_URI=mongodb://localhost:27017/fittrack
+
+# Dla MySQL
+MYSQL_HOST=localhost
+MYSQL_DATABASE=fittrack
+MYSQL_USER=fituser
+MYSQL_PASSWORD=fitpassword
+
+# Wybór bazy danych
+DATABASE_TYPE=both  # lub mysql lub mongo
+```
+
+4. Upewnić się, że lokalne bazy danych są uruchomione:
+   - Dla MongoDB: usługa MongoDB działa na porcie 27017
+   - Dla MySQL (np. przez XAMPP): usługa MySQL działa na porcie 3306
+
+5. W przypadku korzystania z MySQL, należy utworzyć bazę danych i użytkownika:
+   ```sql
+   CREATE DATABASE fittrack;
+   CREATE USER 'fituser'@'localhost' IDENTIFIED BY 'fitpassword';
+   GRANT ALL PRIVILEGES ON fittrack.* TO 'fituser'@'localhost';
    ```
 
-4. Uruchomić serwer:
+6. Uruchomić serwer:
 ```bash
 npm start
 ```
