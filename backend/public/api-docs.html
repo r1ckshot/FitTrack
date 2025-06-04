@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trasy</title>
+    <link rel="icon" type="image/png" href="data:image/png;base64,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">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #4CAF50 0%, #81C784 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4CAF50 0%, #81C784 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #4CAF50 0%, #81C784 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .routes-section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #00b894;
+            display: inline-block;
+        }
+
+        .route-group {
+            background: #f8fffe;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-left: 5px solid #00b894;
+        }
+
+        .route-group h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .route-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            margin: 8px 0;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .route-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .method {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.8rem;
+            min-width: 60px;
+            text-align: center;
+            margin-right: 15px;
+        }
+
+        .method.GET { background: #cce5ff; color: #004085; }
+        .method.POST { background: #bbf7d0; color: #059669; }
+        .method.PUT { background: #fff3cd; color: #856404; }
+        .method.DELETE { background: #f8d7da; color: #c0392b; }
+
+        .route-path {
+            font-family: 'Courier New', monospace;
+            background: #f1f1f1;
+            padding: 6px 10px;
+            border-radius: 5px;
+            margin-right: 15px;
+            font-size: 0.9rem;
+            flex: 1;
+        }
+
+        .route-description {
+            color: #666;
+            font-size: 0.9rem;
+            flex: 2;
+        }
+
+        .auth-required {
+            background: #d1f2eb;
+            color: #00b894;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            margin-left: 10px;
+        }
+
+        .footer {
+            background: #f8f9fa;
+            padding: 20px 40px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #e9ecef;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .route-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .route-path, .route-description {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏃‍♂️ FitTrack API</h1>
+            <p>Dokumentacja wszystkich dostępnych tras REST API</p>
+        </div>
+
+        <div class="content">
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number">34</div>
+                    <div class="stat-label">Łączna liczba tras</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">6</div>
+                    <div class="stat-label">Głównych modułów</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">3</div>
+                    <div class="stat-label">Formaty eksportu</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">2</div>
+                    <div class="stat-label">Bazy danych</div>
+                </div>
+            </div>
+
+            <div class="routes-section">
+                <h2 class="section-title">🔐 Uwierzytelnianie</h2>
+                <div class="route-group">
+                    <h3>Zarządzanie kontem użytkownika</h3>
+                    <div class="route-item">
+                        <span class="method POST">POST</span>
+                        <span class="route-path">/api/auth/register</span>
+                        <span class="route-description">Rejestracja nowego użytkownika</span>
+                    </div>
+                    <div class="route-item">
+                        <span class="method POST">POST</span>
+                        <span class="route-path">/api/auth/login</span>
+                        <span class="route-description">Logowanie użytkownika</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="routes-section">
+                <h2 class="section-title">👤 Profil użytkownika</h2>
+                <div class="route-group">
+                    <h3>Zarządzanie profilem</h3>
+                    <div class="route-item">
+                        <span class="method GET">GET</span>
+                        <span class="route-path">/api/profile</span>
+                        <span class="route-description">Pobieranie danych profilu użytkownika</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                    <div class="route-item">
+                        <span class="method PUT">PUT</span>
+                        <span class="route-path">/api/profile</span>
+                        <span class="route-description">Aktualizacja profilu użytkownika</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                    <div class="route-item">
+                        <span class="method PUT">PUT</span>
+                        <span class="route-path">/api/profile/change-password</span>
+                        <span class="route-description">Zmiana hasła użytkownika</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                    <div class="route-item">
+                        <span class="method DELETE">DELETE</span>
+                        <span class="route-path">/api/profile</span>
+                        <span class="route-description">Usuwanie konta użytkownika</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="routes-section">
+                <h2 class="section-title">💪 Plany treningowe</h2>
+                <div class="route-group">
+                    <h3>CRUD planów treningowych</h3>
+                    <div class="route-item">
+                        <span class="method POST">POST</span>
+                        <span class="route-path">/api/training-plans</span>
+                        <span class="route-description">Tworzenie nowego planu treningowego</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                    <div class="route-item">
+                        <span class="method GET">GET</span>
+                        <span class="route-path">/api/training-plans</span>
+                        <span class="route-description">Pobieranie wszystkich planów użytkownika</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                    <div class="route-item">
+                        <span class="method GET">GET</span>
+                        <span class="route-path">/api/training-plans/:id</span>
+                        <span class="route-description">Pobieranie szczegółów konkretnego planu</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                    <div class="route-item">
+                        <span class="method PUT">PUT</span>
+                        <span class="route-path">/api/training-plans/:id</span>
+                        <span class="route-description">Aktualizacja planu treningowego</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                    <div class="route-item">
+                        <span class="method DELETE">DELETE</span>
+                        <span class="route-path">/api/training-plans/:id</span>
+                        <span class="route-description">Usuwanie planu treningowego</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                </div>
+
+                <div class="route-group">
+                    <h3>Import/Export planów treningowych</h3>
+                    <div class="route-item">
+                        <span class="method GET">GET</span>
+                        <span class="route-path">/api/training-plans/:id/export</span>
+                        <span class="route-description">Eksport planu treningowego (JSON/XML/YAML)</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                    <div class="route-item">
+                        <span class="method POST">POST</span>
+                        <span class="route-path">/api/training-plans/import</span>
+                        <span class="route-description">Import planu treningowego z pliku</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="routes-section">
+                <h2 class="section-title">🥗 Plany dietetyczne</h2>
+                <div class="route-group">
+                    <h3>CRUD planów dietetycznych</h3>
+                    <div class="route-item">
+                        <span class="method POST">POST</span>
+                        <span class="route-path">/api/diet-plans</span>
+                        <span class="route-description">Tworzenie nowego planu diety</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                    <div class="route-item">
+                        <span class="method GET">GET</span>
+                        <span class="route-path">/api/diet-plans</span>
+                        <span class="route-description">Pobieranie wszystkich planów użytkownika</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                    <div class="route-item">
+                        <span class="method GET">GET</span>
+                        <span class="route-path">/api/diet-plans/:id</span>
+                        <span class="route-description">Pobieranie szczegółów konkretnego planu diety</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                    <div class="route-item">
+                        <span class="method PUT">PUT</span>
+                        <span class="route-path">/api/diet-plans/:id</span>
+                        <span class="route-description">Aktualizacja planu diety</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                    <div class="route-item">
+                        <span class="method DELETE">DELETE</span>
+                        <span class="route-path">/api/diet-plans/:id</span>
+                        <span class="route-description">Usuwanie planu diety</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                </div>
+
+                <div class="route-group">
+                    <h3>Import/Export planów dietetycznych</h3>
+                    <div class="route-item">
+                        <span class="method GET">GET</span>
+                        <span class="route-path">/api/diet-plans/:id/export</span>
+                        <span class="route-description">Eksport planu dietetycznego (JSON/XML/YAML)</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                    <div class="route-item">
+                        <span class="method POST">POST</span>
+                        <span class="route-path">/api/diet-plans/import</span>
+                        <span class="route-description">Import planu dietetycznego z pliku</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="routes-section">
+                <h2 class="section-title">📈 Śledzenie postępów</h2>
+                <div class="route-group">
+                    <h3>Zarządzanie danymi postępów</h3>
+                    <div class="route-item">
+                        <span class="method POST">POST</span>
+                        <span class="route-path">/api/progress</span>
+                        <span class="route-description">Dodawanie nowych danych postępów</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                    <div class="route-item">
+                        <span class="method GET">GET</span>
+                        <span class="route-path">/api/progress</span>
+                        <span class="route-description">Pobieranie wszystkich danych postępów</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                    <div class="route-item">
+                        <span class="method PUT">PUT</span>
+                        <span class="route-path">/api/progress/:id</span>
+                        <span class="route-description">Edycja danych postępów</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                    <div class="route-item">
+                        <span class="method DELETE">DELETE</span>
+                        <span class="route-path">/api/progress/:id</span>
+                        <span class="route-description">Usuwanie danych postępów</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="routes-section">
+                <h2 class="section-title">🔍 Analizy zdrowotne</h2>
+                <div class="route-group">
+                    <h3>Dane analityczne</h3>
+                    <div class="route-item">
+                        <span class="method GET">GET</span>
+                        <span class="route-path">/api/analytics/countries</span>
+                        <span class="route-description">Lista dostępnych krajów</span>
+                    </div>
+                    <div class="route-item">
+                        <span class="method GET">GET</span>
+                        <span class="route-path">/api/analytics/available-years</span>
+                        <span class="route-description">Dostępne lata dla danego kraju i typu analizy</span>
+                    </div>
+                    <div class="route-item">
+                        <span class="method GET">GET</span>
+                        <span class="route-path">/api/analytics/analysis-types</span>
+                        <span class="route-description">Dostępne typy analiz</span>
+                    </div>
+                </div>
+
+                <div class="route-group">
+                    <h3>Zarządzanie analizami</h3>
+                    <div class="route-item">
+                        <span class="method POST">POST</span>
+                        <span class="route-path">/api/analyses</span>
+                        <span class="route-description">Tworzenie i zapisywanie nowej analizy</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                    <div class="route-item">
+                        <span class="method GET">GET</span>
+                        <span class="route-path">/api/analyses</span>
+                        <span class="route-description">Lista zapisanych analiz użytkownika</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                    <div class="route-item">
+                        <span class="method GET">GET</span>
+                        <span class="route-path">/api/analyses/:id</span>
+                        <span class="route-description">Szczegóły konkretnej analizy</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                    <div class="route-item">
+                        <span class="method PUT">PUT</span>
+                        <span class="route-path">/api/analyses/:id</span>
+                        <span class="route-description">Aktualizacja nazwy analizy</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                    <div class="route-item">
+                        <span class="method DELETE">DELETE</span>
+                        <span class="route-path">/api/analyses/:id</span>
+                        <span class="route-description">Usunięcie analizy</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                </div>
+
+                <div class="route-group">
+                    <h3>Import/Export analiz</h3>
+                    <div class="route-item">
+                        <span class="method GET">GET</span>
+                        <span class="route-path">/api/analyses/:id/export</span>
+                        <span class="route-description">Eksport analizy (JSON/XML/YAML)</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                    <div class="route-item">
+                        <span class="method POST">POST</span>
+                        <span class="route-path">/api/analyses/import</span>
+                        <span class="route-description">Import analizy z pliku</span>
+                        <span class="auth-required">🔒 Auth</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>🏃‍♂️ FitTrack API - Kompleksowa aplikacja do zarządzania treningami, dietą i analizami zdrowotnymi</p>
+            <p>Dostępne bazy danych: MongoDB, MySQL | Formaty eksportu: JSON, XML, YAML</p>
+        </div>
+    </div>
+</body>
+</html>

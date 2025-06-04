@@ -10,6 +10,7 @@ FitTrack to kompleksowa aplikacja do zarządzania treningami, dietą oraz śledz
 - [Uruchamianie aplikacji 🚀](#uruchamianie-aplikacji-)
   - [Używanie Dockera 🐳](#używanie-dockera-)
   - [Uruchamianie bez Dockera ⚙️](#uruchamianie-bez-dockera-)
+- [Dokumentacja API 📚](#dokumentacja-api-)
 - [Klucze API 🔑](#klucze-api-)
 - [Uwagi dotyczące MySQL 📝](#uwagi-dotyczące-mysql-)
 - [Zrzuty ekranu 📷](#zrzuty-ekranu-)
@@ -100,12 +101,12 @@ Projekt jest w pełni zdockeryzowany, co pozwala na łatwe uruchomienie wszystki
 
 #### Budowanie i uruchamianie aplikacji
 
-1. **Najpierw należy ustawić odpowiednią wartość w pliku `backend/.env`**:
+1. Najpierw należy ustawić odpowiednią wartość w pliku `backend/.env`:
    ```
    DATABASE_TYPE=both  # lub mysql lub mongo
    ```
 
-2. **Następnie można użyć profilów Docker Compose do budowania i uruchamiania wybranych usług**:
+2. Następnie można użyć profilów Docker Compose do budowania i uruchamiania wybranych usług:
 
 **Budowanie i uruchamianie tylko z MongoDB:**
 ```bash
@@ -201,6 +202,18 @@ npm start
 ```
 
 Aplikacja będzie dostępna pod adresem `http://localhost:3000`, a API pod adresem `http://localhost:8080`.
+
+## Dokumentacja API 📚
+
+Po uruchomieniu aplikacji, kompletna dokumentacja wszystkich dostępnych tras API znajduje się pod adresem:
+**`http://localhost:8080/public/api-docs.html`**
+
+Dokumentacja zawiera:
+  - Listę wszystkich 34 tras API
+  - Kolorowe oznaczenia metod HTTP (GET, POST, PUT, DELETE)
+  - Informacje o trasach wymagających autoryzacji
+  - Podział na 6 głównych modułów funkcjonalnych
+  - Opisy funkcjonalności każdej trasy
 
 ## Klucze API 🔑
 
