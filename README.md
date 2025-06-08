@@ -75,12 +75,11 @@ FitTrack to kompleksowa aplikacja do zarządzania treningami, dietą oraz śledz
 <table>
   <tr>
     <td><img width="400" alt="Panel analiz zdrowotnych" src="https://github.com/user-attachments/assets/6e8fc5c1-b2c7-4048-8e35-c5f7a77bf387" /></td>
-    <td><img width="400" alt="Wyniki analiz" src="https://github.com/user-attachments/assets/1a687208-bf1c-45d8-bdf5-529aef19ed27" /></td>
+    <td><img width="400" alt="Zapisane analizy" src="https://github.com/user-attachments/assets/b47b1bf5-0554-4826-bb99-de12901389ea" /></td>
   </tr>
   <tr>
-    <td colspan="2" style="text-align: center;">
-      <img width="400" alt="Zapisane analizy" src="https://github.com/user-attachments/assets/b47b1bf5-0554-4826-bb99-de12901389ea" />
-    </td>
+    <td><img width="400" alt="Wyniki analizy 1" src="https://github.com/user-attachments/assets/f43749ee-f6aa-47a2-a6fd-ce06a7af4a47" /></td>
+    <td><img width="400" alt="Wyniki analizy 1" src="https://github.com/user-attachments/assets/439245a2-5772-494f-a653-5ef7a81b5b65" /></td>
   </tr>
 </table>
 
