@@ -31,6 +31,10 @@ FitTrack to kompleksowa aplikacja do zarządzania treningami, dietą oraz śledz
     <td><img width="400" alt="Plany Treningowe" src="https://github.com/user-attachments/assets/97f45ae0-1ac0-4a0c-9cb9-2722cff3d7e0" /></td>
     <td><img width="400" alt="Wyszukiwanie ćwiczeń" src="https://github.com/user-attachments/assets/ed0f9b93-a9ae-4290-bb0f-4a7c632702c7" /></td>
   </tr>
+  <tr>
+    <td><img width="400" alt="Edycja Planu Treningowego" src="https://github.com/user-attachments/assets/6f9cc8a0-1b6d-4039-8ace-fdbf67279395" /></td>
+    <td><img width="400" alt="Szczegóły Planu Treningowego" src="https://github.com/user-attachments/assets/28f47f86-1d56-46f9-bee5-4bb19556b32a" /></td>
+  </tr>
 </table>
 
 ### 2. Plany Dietetyczne 🥗
@@ -43,6 +47,10 @@ FitTrack to kompleksowa aplikacja do zarządzania treningami, dietą oraz śledz
   <tr>
     <td><img width="400" alt="Plany dietetyczne" src="https://github.com/user-attachments/assets/5c0a4d97-0db7-4046-a0ab-8f127eb634f1" /></td>
     <td><img width="400" alt="Wybór posiłków" src="https://github.com/user-attachments/assets/7a93cdb7-3204-425b-9b49-884091cc2a3b" /></td>
+  </tr>
+  <tr>
+    <td><img width="400" alt="Edycja Planu Dietetycznego" src="https://github.com/user-attachments/assets/5e317ab9-77e6-4133-8fc2-190316b05d01" /></td>
+    <td><img width="400" alt="Szczegóły Planu Dietetycznego" src="https://github.com/user-attachments/assets/f8e47066-c60b-4c97-986c-507d11cac889" /></td>
   </tr>
 </table>
 
@@ -70,7 +78,9 @@ FitTrack to kompleksowa aplikacja do zarządzania treningami, dietą oraz śledz
     <td><img width="400" alt="Wyniki analiz" src="https://github.com/user-attachments/assets/1a687208-bf1c-45d8-bdf5-529aef19ed27" /></td>
   </tr>
   <tr>
-    <td colspan="2"><img width="400" alt="Zapisane analizy" src="https://github.com/user-attachments/assets/b47b1bf5-0554-4826-bb99-de12901389ea" /></td>
+    <td colspan="2" style="text-align: center;">
+      <img width="400" alt="Zapisane analizy" src="https://github.com/user-attachments/assets/b47b1bf5-0554-4826-bb99-de12901389ea" />
+    </td>
   </tr>
 </table>
 
