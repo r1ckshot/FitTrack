@@ -66,7 +66,7 @@ FitTrack to kompleksowa aplikacja do zarządzania treningami, dietą oraz śledz
 - Łączenie i porównywanie danych z WHO i World Bank
 - Analiza korelacji między wskaźnikami zdrowotnymi a społeczno-ekonomicznymi
 - Wizualizacja danych na interaktywnych wykresach z możliwością wyboru kraju w określonym okresie czasu
-**Typy analiz:**
+- **Typy analiz:**
   - Otyłość vs wydatki na ochronę zdrowia
   - PKB per capita vs aktywność fizyczna  
   - Prawdopodobieństwo zgonu vs urbanizacja
