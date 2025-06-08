@@ -2,6 +2,8 @@
 
 FitTrack to kompleksowa aplikacja do zarządzania treningami, dietą oraz śledzenia postępów. Umożliwia tworzenie planów treningowych i dietetycznych, monitorowanie postępów oraz przeprowadzanie zaawansowanych analiz korelacji między wskaźnikami zdrowotnymi a wskaźnikami społeczno-ekonomicznymi.
 
+![Image](https://github.com/user-attachments/assets/c5a4204a-c404-4aee-9ee2-e0cdf78a51fd)
+
 ## Spis treści 📋
 
 - [Funkcjonalności 🌟](#funkcjonalności-)
@@ -13,9 +15,10 @@ FitTrack to kompleksowa aplikacja do zarządzania treningami, dietą oraz śledz
 - [Dokumentacja API 📚](#dokumentacja-api-)
 - [Klucze API 🔑](#klucze-api-)
 - [Uwagi dotyczące MySQL 📝](#uwagi-dotyczące-mysql-)
-- [Zrzuty ekranu 📷](#zrzuty-ekranu-)
 
 ## Funkcjonalności 🌟
+
+![Image](https://github.com/user-attachments/assets/42b19371-fc61-4798-a456-08054764c3a9)
 
 ### 1. Plany Treningowe 💪
 - Tworzenie spersonalizowanych planów treningowych
@@ -23,29 +26,62 @@ FitTrack to kompleksowa aplikacja do zarządzania treningami, dietą oraz śledz
 - Dodawanie ćwiczeń ręcznie lub wyszukiwanie w bazie danych poprzez API ExerciseDB
 - Szczegółowe informacje o ćwiczeniach: liczba serii, powtórzeń, ciężar i czas odpoczynku
 
+<table>
+  <tr>
+    <td><img width="400" alt="Plany Treningowe" src="https://github.com/user-attachments/assets/97f45ae0-1ac0-4a0c-9cb9-2722cff3d7e0" /></td>
+    <td><img width="400" alt="Wyszukiwanie ćwiczeń" src="https://github.com/user-attachments/assets/ed0f9b93-a9ae-4290-bb0f-4a7c632702c7" /></td>
+  </tr>
+</table>
+
 ### 2. Plany Dietetyczne 🥗
 - Tworzenie planów żywieniowych
 - Organizacja posiłków według dni
 - Dodawanie własnych posiłków lub wyszukiwanie przepisów przez API Spoonacular
 - Szczegółowe informacje o makroskładnikach: białko, węglowodany, tłuszcze i kalorie
 
+<table>
+  <tr>
+    <td><img width="400" alt="Plany dietetyczne" src="https://github.com/user-attachments/assets/5c0a4d97-0db7-4046-a0ab-8f127eb634f1" /></td>
+    <td><img width="400" alt="Wybór posiłków" src="https://github.com/user-attachments/assets/7a93cdb7-3204-425b-9b49-884091cc2a3b" /></td>
+  </tr>
+</table>
+
 ### 3. Śledzenie Postępów 📈
 - Rejestrowanie wagi ciała
 - Monitorowanie czasu treningów
-- Wizualizacja postępów na wykresach
+- Wizualizacja postępów na wykresach w Dashboardzie
 - Śledzenie metryk zdrowotnych w czasie
+
+![Image](https://github.com/user-attachments/assets/ebf549ac-1d0c-471f-a8fc-02db2d9ea257)
 
 ### 4. Analizy Zdrowotne 🔍
 - Łączenie i porównywanie danych z WHO i World Bank
 - Analiza korelacji między wskaźnikami zdrowotnymi a społeczno-ekonomicznymi
 - Wizualizacja danych na interaktywnych wykresach z możliwością wyboru kraju w określonym okresie czasu
-- Typy analiz:
-  - Otyłość vs wydatki na ochronę zdrowia: Czy kraje wydające więcej na ochronę zdrowia mają niższe wskaźniki otyłości?
-  - PKB per capita vs aktywność fizyczna: Czy zamożność społeczeństwa przekłada się na większą aktywność fizyczną?
-  - Prawdopodobieństwo zgonu vs urbanizacja: Czy w bardziej zurbanizowanych krajach częściej występują choroby serca i inne choroby niezakaźne?
-  - Cukrzyca vs nierówności dochodowe: Czy większe nierówności dochodowe wiążą się z częstszym występowaniem cukrzycy?
+**Typy analiz:**
+  - Otyłość vs wydatki na ochronę zdrowia
+  - PKB per capita vs aktywność fizyczna  
+  - Prawdopodobieństwo zgonu vs urbanizacja
+  - Cukrzyca vs nierówności dochodowe
 
-### 5. Import i Eksport Danych 💾
+<table>
+  <tr>
+    <td><img width="400" alt="Panel analiz zdrowotnych" src="https://github.com/user-attachments/assets/6e8fc5c1-b2c7-4048-8e35-c5f7a77bf387" /></td>
+    <td><img width="400" alt="Wyniki analiz" src="https://github.com/user-attachments/assets/1a687208-bf1c-45d8-bdf5-529aef19ed27" /></td>
+  </tr>
+  <tr>
+    <td colspan="2"><img width="400" alt="Zapisane analizy" src="https://github.com/user-attachments/assets/b47b1bf5-0554-4826-bb99-de12901389ea" /></td>
+  </tr>
+</table>
+
+### 5. Profil Użytkownika 👤
+- Zarządzanie danymi osobowymi
+- Możliwość zmiany hasła
+- Możliwość usunięcia konta wraz ze wszystkimi powiązanymi danymi 
+
+![Image](https://github.com/user-attachments/assets/4a94bb6f-8379-4555-a2a4-afb22d3df41a)
+
+### 6. Import i Eksport Danych 💾
 - Obsługa formatów JSON, XML i YAML
 - Importowanie i eksportowanie planów treningowych i dietetycznych
 - Importowanie i eksportowanie przeprowadzonych analiz
@@ -75,7 +111,7 @@ FitTrack oferuje elastyczną konfigurację baz danych, umożliwiając korzystani
 
 Konfiguracja odbywa się poprzez zmienną `DATABASE_TYPE` w pliku `backend/.env`:
 
-```
+```env
 # Możliwe wartości: mongo, mysql, both
 DATABASE_TYPE=both
 ```
@@ -102,7 +138,7 @@ Projekt jest w pełni zdockeryzowany, co pozwala na łatwe uruchomienie wszystki
 #### Budowanie i uruchamianie aplikacji
 
 1. Najpierw należy ustawić odpowiednią wartość w pliku `backend/.env`:
-   ```
+   ```env
    DATABASE_TYPE=both  # lub mysql lub mongo
    ```
 
@@ -155,7 +191,7 @@ npm install
 ```
 
 3. Skonfigurować plik `backend/.env` dla lokalnego uruchomienia:
-```
+```env
 # Dla MongoDB
 MONGODB_URI=mongodb://localhost:27017/fittrack
 
@@ -205,15 +241,17 @@ Aplikacja będzie dostępna pod adresem `http://localhost:3000`, a API pod adres
 
 ## Dokumentacja API 📚
 
+![Image](https://github.com/user-attachments/assets/2c36048e-47fe-442d-a060-1ac31e90d6e7)
+
 Po uruchomieniu aplikacji, kompletna dokumentacja wszystkich dostępnych tras API znajduje się pod adresem:
 **`http://localhost:8080/public/api-docs.html`**
 
 Dokumentacja zawiera:
-  - Listę wszystkich 34 tras API
-  - Kolorowe oznaczenia metod HTTP (GET, POST, PUT, DELETE)
-  - Informacje o trasach wymagających autoryzacji
-  - Podział na 6 głównych modułów funkcjonalnych
-  - Opisy funkcjonalności każdej trasy
+- Listę wszystkich 34 tras API
+- Kolorowe oznaczenia metod HTTP (GET, POST, PUT, DELETE)
+- Informacje o trasach wymagających autoryzacji
+- Podział na 6 głównych modułów funkcjonalnych
+- Opisy funkcjonalności każdej trasy
 
 ## Klucze API 🔑
 
@@ -223,7 +261,7 @@ Aby w pełni korzystać z funkcjonalności aplikacji, konieczne jest uzyskanie k
 1. Należy zarejestrować się na [RapidAPI](https://rapidapi.com/)
 2. Uzyskać klucz API dla [ExerciseDB](https://rapidapi.com/justin-WFnsXH_t6/api/exercisedb)
 3. Dodać klucz do pliku `frontend/.env`:
-```
+```env
 REACT_APP_EXERCISEDB_API_KEY=your_api_key
 REACT_APP_EXERCISEDB_HOST=exercisedb.p.rapidapi.com
 ```
@@ -232,7 +270,7 @@ REACT_APP_EXERCISEDB_HOST=exercisedb.p.rapidapi.com
 1. Należy zarejestrować się na [RapidAPI](https://rapidapi.com/)
 2. Uzyskać klucz API dla [Spoonacular](https://rapidapi.com/spoonacular/api/recipe-food-nutrition)
 3. Dodać klucz do pliku `frontend/.env`:
-```
+```env
 REACT_APP_SPOONACULAR_API_KEY=your_api_key
 REACT_APP_SPOONACULAR_HOST=spoonacular-recipe-food-nutrition-v1.p.rapidapi.com
 ```
@@ -256,7 +294,3 @@ ALTER USER 'fituser'@'%' IDENTIFIED WITH mysql_native_password BY 'fitpassword';
 # Wyjście z konsoli MySQL
 EXIT;
 ```
-
-## Zrzuty ekranu 📷
-
-*Tutaj będą dostępne zrzuty ekranu aplikacji*
