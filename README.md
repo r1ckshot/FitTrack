@@ -1,305 +1,323 @@
-# FitTrack 🏃‍♂️ 🍎 📊
+# 🏃‍♂️ FitTrack
 
-FitTrack to kompleksowa aplikacja do zarządzania treningami, dietą oraz śledzenia postępów. Umożliwia tworzenie planów treningowych i dietetycznych, monitorowanie postępów oraz przeprowadzanie zaawansowanych analiz korelacji między wskaźnikami zdrowotnymi a wskaźnikami społeczno-ekonomicznymi.
+**A comprehensive fitness tracking application for managing workouts, diet, and health analytics.** Built with React and Node.js, featuring dual database support (MongoDB & MySQL) and integration with external fitness APIs.
 
-![Image](https://github.com/user-attachments/assets/c5a4204a-c404-4aee-9ee2-e0cdf78a51fd)
+> **Note:** The entire interface is in Polish.
 
-## Spis treści 📋
+<table>
+  <td><img src="https://github.com/user-attachments/assets/c5a4204a-c404-4aee-9ee2-e0cdf78a51fd"/></td>
+</table>
 
-- [Funkcjonalności 🌟](#funkcjonalności-)
-- [Wymagania systemowe 🖥️](#wymagania-systemowe-)
-- [Konfiguracja baz danych 🗄️](#konfiguracja-baz-danych-)
-- [Uruchamianie aplikacji 🚀](#uruchamianie-aplikacji-)
-  - [Używanie Dockera 🐳](#używanie-dockera-)
-  - [Uruchamianie bez Dockera ⚙️](#uruchamianie-bez-dockera-)
-- [Dokumentacja API 📚](#dokumentacja-api-)
-- [Klucze API 🔑](#klucze-api-)
-- [Uwagi dotyczące MySQL 📝](#uwagi-dotyczące-mysql-)
+## ✨ Features
 
-## Funkcjonalności 🌟
-
-![Image](https://github.com/user-attachments/assets/42b19371-fc61-4798-a456-08054764c3a9)
-
-### 1. Plany Treningowe 💪
-- Tworzenie spersonalizowanych planów treningowych
-- Organizacja treningów według dni tygodnia
-- Dodawanie ćwiczeń ręcznie lub wyszukiwanie w bazie danych poprzez API ExerciseDB
-- Szczegółowe informacje o ćwiczeniach: liczba serii, powtórzeń, ciężar i czas odpoczynku
+### 💪 Workout Management
+- Create personalized workout plans
+- Organize exercises by day of the week
+- Search exercises via **ExerciseDB API** or add custom ones
+- Detailed exercise tracking: sets, reps, weight, and rest time
+- Visual exercise demonstrations with images
 
 <table>
   <tr>
-    <td><img width="400" alt="Plany Treningowe" src="https://github.com/user-attachments/assets/97f45ae0-1ac0-4a0c-9cb9-2722cff3d7e0" /></td>
-    <td><img width="400" alt="Wyszukiwanie ćwiczeń" src="https://github.com/user-attachments/assets/ed0f9b93-a9ae-4290-bb0f-4a7c632702c7" /></td>
+    <td><img src="https://github.com/user-attachments/assets/97f45ae0-1ac0-4a0c-9cb9-2722cff3d7e0" /></td>
+    <td><img src="https://github.com/user-attachments/assets/ed0f9b93-a9ae-4290-bb0f-4a7c632702c7" /></td>
   </tr>
   <tr>
-    <td><img width="400" alt="Edycja Planu Treningowego" src="https://github.com/user-attachments/assets/6f9cc8a0-1b6d-4039-8ace-fdbf67279395" /></td>
-    <td><img width="400" alt="Szczegóły Planu Treningowego" src="https://github.com/user-attachments/assets/28f47f86-1d56-46f9-bee5-4bb19556b32a" /></td>
+    <td><img src="https://github.com/user-attachments/assets/6f9cc8a0-1b6d-4039-8ace-fdbf67279395" /></td>
+    <td><img src="https://github.com/user-attachments/assets/28f47f86-1d56-46f9-bee5-4bb19556b32a" /></td>
   </tr>
 </table>
 
-### 2. Plany Dietetyczne 🥗
-- Tworzenie planów żywieniowych
-- Organizacja posiłków według dni
-- Dodawanie własnych posiłków lub wyszukiwanie przepisów przez API Spoonacular
-- Szczegółowe informacje o makroskładnikach: białko, węglowodany, tłuszcze i kalorie
+### 🥗 Diet Planning
+- Create customized meal plans
+- Organize meals by day
+- Search recipes via **Spoonacular API** or add custom meals
+- Detailed macronutrient tracking: proteins, carbs, fats, and calories
+- Complete nutritional information for each meal
 
 <table>
   <tr>
-    <td><img width="400" alt="Plany dietetyczne" src="https://github.com/user-attachments/assets/5c0a4d97-0db7-4046-a0ab-8f127eb634f1" /></td>
-    <td><img width="400" alt="Wybór posiłków" src="https://github.com/user-attachments/assets/7a93cdb7-3204-425b-9b49-884091cc2a3b" /></td>
+    <td><img src="https://github.com/user-attachments/assets/5c0a4d97-0db7-4046-a0ab-8f127eb634f1" /></td>
+    <td><img src="https://github.com/user-attachments/assets/7a93cdb7-3204-425b-9b49-884091cc2a3b" /></td>
   </tr>
   <tr>
-    <td><img width="400" alt="Edycja Planu Dietetycznego" src="https://github.com/user-attachments/assets/5e317ab9-77e6-4133-8fc2-190316b05d01" /></td>
-    <td><img width="400" alt="Szczegóły Planu Dietetycznego" src="https://github.com/user-attachments/assets/f8e47066-c60b-4c97-986c-507d11cac889" /></td>
+    <td><img src="https://github.com/user-attachments/assets/5e317ab9-77e6-4133-8fc2-190316b05d01" /></td>
+    <td><img src="https://github.com/user-attachments/assets/f8e47066-c60b-4c97-986c-507d11cac889" /></td>
   </tr>
 </table>
 
-### 3. Śledzenie Postępów 📈
-- Rejestrowanie wagi ciała
-- Monitorowanie czasu treningów
-- Wizualizacja postępów na wykresach w Dashboardzie
-- Śledzenie metryk zdrowotnych w czasie
-
-![Image](https://github.com/user-attachments/assets/ebf549ac-1d0c-471f-a8fc-02db2d9ea257)
-
-### 4. Analizy Zdrowotne 🔍
-- Łączenie i porównywanie danych z WHO i World Bank
-- Analiza korelacji między wskaźnikami zdrowotnymi a społeczno-ekonomicznymi
-- Wizualizacja danych na interaktywnych wykresach z możliwością wyboru kraju w określonym okresie czasu
-- **Typy analiz:**
-  - Otyłość vs wydatki na ochronę zdrowia
-  - PKB per capita vs aktywność fizyczna  
-  - Prawdopodobieństwo zgonu vs urbanizacja
-  - Cukrzyca vs nierówności dochodowe
+### 📊 Progress Tracking
+- Track body weight over time
+- Monitor workout duration
+- Visualize progress with interactive charts
+- Dashboard with key fitness metrics
+- Historical data analysis
 
 <table>
   <tr>
-    <td><img width="400" alt="Panel analiz zdrowotnych" src="https://github.com/user-attachments/assets/6e8fc5c1-b2c7-4048-8e35-c5f7a77bf387" /></td>
-    <td><img width="400" alt="Zapisane analizy" src="https://github.com/user-attachments/assets/b47b1bf5-0554-4826-bb99-de12901389ea" /></td>
-  </tr>
-  <tr>
-    <td><img width="400" alt="Wyniki analizy 1" src="https://github.com/user-attachments/assets/f43749ee-f6aa-47a2-a6fd-ce06a7af4a47" /></td>
-    <td><img width="400" alt="Wyniki analizy 1" src="https://github.com/user-attachments/assets/439245a2-5772-494f-a653-5ef7a81b5b65" /></td>
+  <td><img src="https://github.com/user-attachments/assets/ebf549ac-1d0c-471f-a8fc-02db2d9ea257"/></td>
+  <td><img src="https://github.com/user-attachments/assets/42b19371-fc61-4798-a456-08054764c3a9"/></td>
   </tr>
 </table>
 
-### 5. Profil Użytkownika 👤
-- Zarządzanie danymi osobowymi
-- Możliwość zmiany hasła
-- Możliwość usunięcia konta wraz ze wszystkimi powiązanymi danymi 
 
-![Image](https://github.com/user-attachments/assets/4a94bb6f-8379-4555-a2a4-afb22d3df41a)
+### 🔬 Health Analytics
+- Integrate data from **WHO** and **World Bank** APIs
+- Analyze correlations between health and socioeconomic indicators
+- Interactive visualizations with country and time period selection
+- **Analysis types:**
+  - Obesity vs healthcare expenditure
+  - GDP per capita vs physical activity
+  - Mortality probability vs urbanization
+  - Diabetes vs income inequality
 
-### 6. Import i Eksport Danych 💾
-- Obsługa formatów JSON, XML i YAML
-- Importowanie i eksportowanie planów treningowych i dietetycznych
-- Importowanie i eksportowanie przeprowadzonych analiz
+<table>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/6e8fc5c1-b2c7-4048-8e35-c5f7a77bf387" /></td>
+    <td><img src="https://github.com/user-attachments/assets/b47b1bf5-0554-4826-bb99-de12901389ea" /></td>
+  </tr>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/f43749ee-f6aa-47a2-a6fd-ce06a7af4a47" /></td>
+    <td><img src="https://github.com/user-attachments/assets/439245a2-5772-494f-a653-5ef7a81b5b65" /></td>
+  </tr>
+</table>
 
-## Wymagania systemowe 🖥️
+### 👤 User Management
+- Secure authentication system
+- Profile management
+- Password change functionality
+- Account deletion with data cleanup
 
-### Do uruchomienia z Dockerem:
-- Docker Engine 20.10+ i Docker Compose 2.0+
-- 4GB RAM (zalecane)
-- Wymagania dyskowe:
-  - Aplikacja (frontend + backend): ~2.6GB
-  - MongoDB: ~1.2GB
-  - MySQL: ~1.1GB
-  - Łącznie przy użyciu obu baz danych: ~5GB
-  - Łącznie przy użyciu tylko jednej bazy: ~3.8GB (z MongoDB) lub ~3.7GB (z MySQL)
+<table>
+  <td><img src="https://github.com/user-attachments/assets/4a94bb6f-8379-4555-a2a4-afb22d3df41a"/></td>
+</table>
 
-### Do uruchomienia bez Dockera:
-- Node.js 18.x+ (zalecane 22.x)
-- MongoDB 4.4+ lub MySQL 8.0+ (lub obie)
+### 💾 Import/Export
+- Support for **JSON**, **XML**, and **YAML** formats
+- Export workout and diet plans
+- Import/export health analytics
+- Data portability and backup
+
+## 🛠️ Technologies
+
+### Frontend
+- **React** - UI framework
+- **React Router** - Navigation
+- **Axios** - HTTP client
+- **Recharts** - Data visualization
+- **Bootstrap** - Styling
+
+### Backend
+- **Node.js** - Runtime environment
+- **Express** - Web framework
+- **JWT** - Authentication
+- **Bcrypt** - Password hashing
+
+### Databases
+- **MongoDB** - NoSQL database for flexible data
+- **MySQL** - Relational database for structured data
+- **Dual database support** - Use one or both simultaneously
+
+### External APIs
+- **ExerciseDB** (RapidAPI) - Exercise database
+- **Spoonacular** (RapidAPI) - Recipe and nutrition data
+- **WHO API** - Health indicators
+- **World Bank API** - Economic indicators
+
+### DevOps
+- **Docker** - Containerization
+- **Docker Compose** - Multi-container orchestration
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Docker Engine 20.10+ and Docker Compose 2.0+
+- 4GB RAM (recommended)
+- Disk space: ~5GB (with both databases) or ~3.8GB (single database)
+
+**OR** (for non-Docker setup):
+
+- Node.js 18.x+
+- MongoDB 4.4+ and/or MySQL 8.0+
 - npm 8.x+
 
-## Konfiguracja baz danych 🗄️
+### 🐳 Running with Docker (Recommended)
 
-FitTrack oferuje elastyczną konfigurację baz danych, umożliwiając korzystanie z MongoDB, MySQL lub obu równocześnie.
-
-### Wybór bazy danych
-
-Konfiguracja odbywa się poprzez zmienną `DATABASE_TYPE` w pliku `backend/.env`:
-
-```env
-# Możliwe wartości: mongo, mysql, both
-DATABASE_TYPE=both
-```
-
-Ta zmienna określa, która baza danych będzie używana przez aplikację, niezależnie od tego, czy aplikacja jest uruchamiana z Dockerem czy bez.
-
-### MongoDB
-- Domyślny port: 27017
-- Baza danych: fittrack
-- Bez uwierzytelniania w trybie deweloperskim
-
-### MySQL
-- Domyślny port: 3306
-- Baza danych: fittrack
-- Użytkownik: fituser
-- Hasło: fitpassword
-
-## Uruchamianie aplikacji 🚀
-
-### Używanie Dockera 🐳
-
-Projekt jest w pełni zdockeryzowany, co pozwala na łatwe uruchomienie wszystkich komponentów z wybraną bazą danych.
-
-#### Budowanie i uruchamianie aplikacji
-
-1. Najpierw należy ustawić odpowiednią wartość w pliku `backend/.env`:
-   ```env
-   DATABASE_TYPE=both  # lub mysql lub mongo
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/r1ckshot/FitTrack.git
+   cd FitTrack
    ```
 
-2. Następnie można użyć profilów Docker Compose do budowania i uruchamiania wybranych usług:
+2. **Configure database selection**
+   
+   Edit `backend/.env`:
+   ```env
+   # Options: mongo, mysql, both
+   DATABASE_TYPE=both
+   ```
 
-**Budowanie i uruchamianie tylko z MongoDB:**
-```bash
-docker-compose --profile mongo build
-docker-compose --profile mongo up -d
-```
+3. **Build and run with Docker Compose**
+   
+   ```bash
+   # With both databases
+   docker-compose --profile all build
+   docker-compose --profile all up -d
+   
+   # With MongoDB only
+   docker-compose --profile mongo build
+   docker-compose --profile mongo up -d
+   
+   # With MySQL only
+   docker-compose --profile mysql build
+   docker-compose --profile mysql up -d
+   ```
 
-**Budowanie i uruchamianie tylko z MySQL:**
-```bash
-docker-compose --profile mysql build
-docker-compose --profile mysql up -d
-```
+4. **Access the application**
+   - Frontend: `http://localhost:3000`
+   - API: `http://localhost:8080`
+   - API Documentation: `http://localhost:8080/public/api-docs.html`
 
-**Budowanie i uruchamianie z obiema bazami danych:**
-```bash
-docker-compose --profile all build
-docker-compose --profile all up -d
-```
+### ⚙️ Running without Docker
 
-#### Zarządzanie kontenerami
+#### Backend Setup
 
-```bash
-# Zatrzymanie wszystkich kontenerów (z odpowiednim profilem)
-docker-compose --profile mongo down
-docker-compose --profile mysql down
-docker-compose --profile all down
+1. **Navigate to backend**
+   ```bash
+   cd backend
+   npm install
+   ```
 
-# Sprawdzenie statusu kontenerów
-docker-compose ps
+2. **Configure environment**
+   
+   Edit `backend/.env`:
+   ```env
+   # MongoDB
+   MONGODB_URI=mongodb://localhost:27017/fittrack
+   
+   # MySQL
+   MYSQL_HOST=localhost
+   MYSQL_DATABASE=fittrack
+   MYSQL_USER=fituser
+   MYSQL_PASSWORD=fitpassword
+   
+   # Database selection
+   DATABASE_TYPE=both
+   ```
 
-# Sprawdzenie logów backendu
-docker-compose logs -f backend
-```
-
-### Uruchamianie bez Dockera ⚙️
-
-#### Backend:
-1. Należy przejść do katalogu backend:
-```bash
-cd backend
-```
-
-2. Zainstalować zależności:
-```bash
-npm install
-```
-
-3. Skonfigurować plik `backend/.env` dla lokalnego uruchomienia:
-```env
-# Dla MongoDB
-MONGODB_URI=mongodb://localhost:27017/fittrack
-
-# Dla MySQL
-MYSQL_HOST=localhost
-MYSQL_DATABASE=fittrack
-MYSQL_USER=fituser
-MYSQL_PASSWORD=fitpassword
-
-# Wybór bazy danych
-DATABASE_TYPE=both  # lub mysql lub mongo
-```
-
-4. Upewnić się, że lokalne bazy danych są uruchomione:
-   - Dla MongoDB: usługa MongoDB działa na porcie 27017
-   - Dla MySQL (np. przez XAMPP): usługa MySQL działa na porcie 3306
-
-5. W przypadku korzystania z MySQL, należy utworzyć bazę danych i użytkownika:
+3. **Set up MySQL** (if using)
    ```sql
    CREATE DATABASE fittrack;
    CREATE USER 'fituser'@'localhost' IDENTIFIED BY 'fitpassword';
    GRANT ALL PRIVILEGES ON fittrack.* TO 'fituser'@'localhost';
    ```
 
-6. Uruchomić serwer:
-```bash
-npm start
+4. **Start backend**
+   ```bash
+   npm start
+   ```
+
+#### Frontend Setup
+
+1. **Navigate to frontend**
+   ```bash
+   cd frontend
+   npm install
+   ```
+
+2. **Configure API keys** (see section below)
+
+3. **Start frontend**
+   ```bash
+   npm start
+   ```
+
+## 🔑 API Keys Configuration
+
+To use all features, you need API keys from RapidAPI:
+
+1. Register at [RapidAPI](https://rapidapi.com/)
+
+### ExerciseDB API (for workout plans)
+
+2. Subscribe to [ExerciseDB](https://rapidapi.com/justin-WFnsXH_t6/api/exercisedb)
+3. Edit `frontend/.env`:
+
+   ```env
+   REACT_APP_EXERCISEDB_API_KEY=your_api_key
+   REACT_APP_EXERCISEDB_HOST=exercisedb.p.rapidapi.com
+   ```
+
+### Spoonacular API (for diet plans)
+
+4. Subscribe to [Spoonacular](https://rapidapi.com/spoonacular/api/recipe-food-nutrition)
+5. Edit `frontend/.env`:
+
+   ```env
+   REACT_APP_SPOONACULAR_API_KEY=your_api_key
+   REACT_APP_SPOONACULAR_HOST=spoonacular-recipe-food-nutrition-v1.p.rapidapi.com
+   ```
+
+## 📚 What I Learned
+
+This project represents the culmination of my full-stack development learning:
+
+### Frontend Development
+- React hooks and state management
+- Component architecture and reusability
+- API integration and error handling
+- Data visualization with charts
+- Responsive design principles
+- User experience optimization
+
+### Backend Development
+- RESTful API design
+- Authentication and authorization with JWT
+- Database integration (both SQL and NoSQL)
+- Multi-database architecture patterns
+- API security best practices
+- File parsing (JSON, XML, YAML)
+
+### Database Management
+- MongoDB schema design
+- MySQL relational database design
+- Dual database synchronization
+- Data migration strategies
+- Query optimization
+
+### DevOps & Deployment
+- Docker containerization
+- Docker Compose orchestration
+- Multi-stage builds
+- Environment variable management
+- Container networking
+
+### External API Integration
+- Third-party API consumption
+- API key management
+- Rate limiting handling
+- Data transformation and mapping
+- Error recovery strategies
+
+## 📊 API Documentation
+
+Complete API documentation with all 34 endpoints is available at:
+```
+http://localhost:8080/public/api-docs.html
 ```
 
-#### Frontend:
-1. Należy przejść do katalogu frontend:
-```bash
-cd frontend
-```
+<table>
+  <td><img src="https://github.com/user-attachments/assets/2c36048e-47fe-442d-a060-1ac31e90d6e7"/></td>
+</table>
 
-2. Zainstalować zależności:
-```bash
-npm install
-```
+The documentation includes:
+- Detailed endpoint descriptions
+- HTTP methods (GET, POST, PUT, DELETE)
+- Organized by functional modules
 
-3. Uruchomić aplikację:
-```bash
-npm start
-```
+## 👨‍💻 Author
 
-Aplikacja będzie dostępna pod adresem `http://localhost:3000`, a API pod adresem `http://localhost:8080`.
-
-## Dokumentacja API 📚
-
-![Image](https://github.com/user-attachments/assets/2c36048e-47fe-442d-a060-1ac31e90d6e7)
-
-Po uruchomieniu aplikacji, kompletna dokumentacja wszystkich dostępnych tras API znajduje się pod adresem:
-**`http://localhost:8080/public/api-docs.html`**
-
-Dokumentacja zawiera:
-- Listę wszystkich 34 tras API
-- Kolorowe oznaczenia metod HTTP (GET, POST, PUT, DELETE)
-- Informacje o trasach wymagających autoryzacji
-- Podział na 6 głównych modułów funkcjonalnych
-- Opisy funkcjonalności każdej trasy
-
-## Klucze API 🔑
-
-Aby w pełni korzystać z funkcjonalności aplikacji, konieczne jest uzyskanie kluczy API dla zewnętrznych usług:
-
-### ExerciseDB API (dla planów treningowych)
-1. Należy zarejestrować się na [RapidAPI](https://rapidapi.com/)
-2. Uzyskać klucz API dla [ExerciseDB](https://rapidapi.com/justin-WFnsXH_t6/api/exercisedb)
-3. Dodać klucz do pliku `frontend/.env`:
-```env
-REACT_APP_EXERCISEDB_API_KEY=your_api_key
-REACT_APP_EXERCISEDB_HOST=exercisedb.p.rapidapi.com
-```
-
-### Spoonacular API (dla planów dietetycznych)
-1. Należy zarejestrować się na [RapidAPI](https://rapidapi.com/)
-2. Uzyskać klucz API dla [Spoonacular](https://rapidapi.com/spoonacular/api/recipe-food-nutrition)
-3. Dodać klucz do pliku `frontend/.env`:
-```env
-REACT_APP_SPOONACULAR_API_KEY=your_api_key
-REACT_APP_SPOONACULAR_HOST=spoonacular-recipe-food-nutrition-v1.p.rapidapi.com
-```
-
-## Uwagi dotyczące MySQL 📝
-
-Projekt wykorzystuje MySQL 8.0 z domyślną metodą uwierzytelniania `caching_sha2_password`. W większości przypadków, przy korzystaniu z aktualnych narzędzi, połączenie powinno działać bez dodatkowej konfiguracji.
-
-### Potencjalne problemy z połączeniem
-
-Jeśli używana jest starsza wersja klienta MySQL (np. starsza wersja MySQL Workbench) i pojawią się problemy z połączeniem do bazy danych, może być konieczna zmiana metody uwierzytelniania:
-
-```sql
-# Połączenie z kontenerem MySQL
-docker exec -it fittrack-mysql-1 mysql -u root -p
-# (Należy wpisać hasło: password)
-
-# Zmiana metody uwierzytelniania dla użytkownika fituser
-ALTER USER 'fituser'@'%' IDENTIFIED WITH mysql_native_password BY 'fitpassword';
-
-# Wyjście z konsoli MySQL
-EXIT;
-```
+**Mykhailo Kapustianyk**
+- GitHub: [@r1ckshot](https://github.com/r1ckshot)
+- Year: 2025
